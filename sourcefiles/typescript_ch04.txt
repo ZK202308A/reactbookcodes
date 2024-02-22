@@ -1,0 +1,1294 @@
+.eslintrc.cjs
+.gitignore
+index.html
+package-lock.json
+package.json
+postcss.config.js
+public
+README.md
+src
+tailwind.config.js
+tsconfig.json
+tsconfig.node.json
+vite.config.ts
+===========================================================
+\src\apis\todoApi.ts
+===========================================================
+import axios, { AxiosResponse } from "axios"
+import { Todo, TodoInputType } from "../interfaces/Todo"
+import { PageResponse } from "../interfaces/PageResponse"
+
+export const API_SERVER_HOST = 'http://localhost:8080'
+
+export type AddResultType = {
+    TNO: number
+}
+
+export type UpdateDeleteResultType = {
+  result: string 
+
+}
+
+
+
+
+const prefix = `${API_SERVER_HOST}/api/todo`
+
+export const getOne = async (tno:number) : Promise<Todo> => {
+
+  const res = await axios.get(`${prefix}/${tno}` )
+
+  return res.data
+
+}
+
+export const getList = async ( pageParam: {page:number, size:number} ) : Promise<PageResponse<Todo>>  => {
+
+  const {page,size} = pageParam
+
+  const res = await axios.get(`${prefix}/list`, {params: {page:page,size:size }})
+  
+  return res.data
+
+}
+
+
+export const postAdd = async (todoObj:TodoInputType): Promise<AddResultType> => {
+
+  const res = await axios.post(`${prefix}/` , todoObj)
+
+  return res.data
+}
+
+
+export const deleteOne = async (tno:number) : Promise<UpdateDeleteResultType> => {
+
+  const res = await axios.delete(`${prefix}/${tno}` )
+
+  return res.data
+
+}
+
+export const putOne = async (todo:Todo) : Promise<UpdateDeleteResultType> => {
+
+  const res = await axios.put(`${prefix}/${todo.tno}`, todo)
+
+  return res.data
+}
+
+
+===========================================================
+\src\App.css
+===========================================================
+#root {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: center;
+}
+
+.logo {
+  height: 6em;
+  padding: 1.5em;
+  will-change: filter;
+  transition: filter 300ms;
+}
+.logo:hover {
+  filter: drop-shadow(0 0 2em #646cffaa);
+}
+.logo.react:hover {
+  filter: drop-shadow(0 0 2em #61dafbaa);
+}
+
+@keyframes logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  a:nth-of-type(2) .logo {
+    animation: logo-spin infinite 20s linear;
+  }
+}
+
+.card {
+  padding: 2em;
+}
+
+.read-the-docs {
+  color: #888;
+}
+
+
+===========================================================
+\src\App.tsx
+===========================================================
+import {RouterProvider} from "react-router-dom";
+import root from "./router/root.tsx";
+
+
+function App() {
+
+  return (
+      <RouterProvider router={root}>
+
+      </RouterProvider>
+  )
+}
+
+export default App
+
+
+===========================================================
+\src\assets\react.svg
+===========================================================
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true" role="img" class="iconify iconify--logos" width="35.93" height="32" preserveAspectRatio="xMidYMid meet" viewBox="0 0 256 228"><path fill="#00D8FF" d="M210.483 73.824a171.49 171.49 0 0 0-8.24-2.597c.465-1.9.893-3.777 1.273-5.621c6.238-30.281 2.16-54.676-11.769-62.708c-13.355-7.7-35.196.329-57.254 19.526a171.23 171.23 0 0 0-6.375 5.848a155.866 155.866 0 0 0-4.241-3.917C100.759 3.829 77.587-4.822 63.673 3.233C50.33 10.957 46.379 33.89 51.995 62.588a170.974 170.974 0 0 0 1.892 8.48c-3.28.932-6.445 1.924-9.474 2.98C17.309 83.498 0 98.307 0 113.668c0 15.865 18.582 31.778 46.812 41.427a145.52 145.52 0 0 0 6.921 2.165a167.467 167.467 0 0 0-2.01 9.138c-5.354 28.2-1.173 50.591 12.134 58.266c13.744 7.926 36.812-.22 59.273-19.855a145.567 145.567 0 0 0 5.342-4.923a168.064 168.064 0 0 0 6.92 6.314c21.758 18.722 43.246 26.282 56.54 18.586c13.731-7.949 18.194-32.003 12.4-61.268a145.016 145.016 0 0 0-1.535-6.842c1.62-.48 3.21-.974 4.76-1.488c29.348-9.723 48.443-25.443 48.443-41.52c0-15.417-17.868-30.326-45.517-39.844Zm-6.365 70.984c-1.4.463-2.836.91-4.3 1.345c-3.24-10.257-7.612-21.163-12.963-32.432c5.106-11 9.31-21.767 12.459-31.957c2.619.758 5.16 1.557 7.61 2.4c23.69 8.156 38.14 20.213 38.14 29.504c0 9.896-15.606 22.743-40.946 31.14Zm-10.514 20.834c2.562 12.94 2.927 24.64 1.23 33.787c-1.524 8.219-4.59 13.698-8.382 15.893c-8.067 4.67-25.32-1.4-43.927-17.412a156.726 156.726 0 0 1-6.437-5.87c7.214-7.889 14.423-17.06 21.459-27.246c12.376-1.098 24.068-2.894 34.671-5.345a134.17 134.17 0 0 1 1.386 6.193ZM87.276 214.515c-7.882 2.783-14.16 2.863-17.955.675c-8.075-4.657-11.432-22.636-6.853-46.752a156.923 156.923 0 0 1 1.869-8.499c10.486 2.32 22.093 3.988 34.498 4.994c7.084 9.967 14.501 19.128 21.976 27.15a134.668 134.668 0 0 1-4.877 4.492c-9.933 8.682-19.886 14.842-28.658 17.94ZM50.35 144.747c-12.483-4.267-22.792-9.812-29.858-15.863c-6.35-5.437-9.555-10.836-9.555-15.216c0-9.322 13.897-21.212 37.076-29.293c2.813-.98 5.757-1.905 8.812-2.773c3.204 10.42 7.406 21.315 12.477 32.332c-5.137 11.18-9.399 22.249-12.634 32.792a134.718 134.718 0 0 1-6.318-1.979Zm12.378-84.26c-4.811-24.587-1.616-43.134 6.425-47.789c8.564-4.958 27.502 2.111 47.463 19.835a144.318 144.318 0 0 1 3.841 3.545c-7.438 7.987-14.787 17.08-21.808 26.988c-12.04 1.116-23.565 2.908-34.161 5.309a160.342 160.342 0 0 1-1.76-7.887Zm110.427 27.268a347.8 347.8 0 0 0-7.785-12.803c8.168 1.033 15.994 2.404 23.343 4.08c-2.206 7.072-4.956 14.465-8.193 22.045a381.151 381.151 0 0 0-7.365-13.322Zm-45.032-43.861c5.044 5.465 10.096 11.566 15.065 18.186a322.04 322.04 0 0 0-30.257-.006c4.974-6.559 10.069-12.652 15.192-18.18ZM82.802 87.83a323.167 323.167 0 0 0-7.227 13.238c-3.184-7.553-5.909-14.98-8.134-22.152c7.304-1.634 15.093-2.97 23.209-3.984a321.524 321.524 0 0 0-7.848 12.897Zm8.081 65.352c-8.385-.936-16.291-2.203-23.593-3.793c2.26-7.3 5.045-14.885 8.298-22.6a321.187 321.187 0 0 0 7.257 13.246c2.594 4.48 5.28 8.868 8.038 13.147Zm37.542 31.03c-5.184-5.592-10.354-11.779-15.403-18.433c4.902.192 9.899.29 14.978.29c5.218 0 10.376-.117 15.453-.343c-4.985 6.774-10.018 12.97-15.028 18.486Zm52.198-57.817c3.422 7.8 6.306 15.345 8.596 22.52c-7.422 1.694-15.436 3.058-23.88 4.071a382.417 382.417 0 0 0 7.859-13.026a347.403 347.403 0 0 0 7.425-13.565Zm-16.898 8.101a358.557 358.557 0 0 1-12.281 19.815a329.4 329.4 0 0 1-23.444.823c-7.967 0-15.716-.248-23.178-.732a310.202 310.202 0 0 1-12.513-19.846h.001a307.41 307.41 0 0 1-10.923-20.627a310.278 310.278 0 0 1 10.89-20.637l-.001.001a307.318 307.318 0 0 1 12.413-19.761c7.613-.576 15.42-.876 23.31-.876H128c7.926 0 15.743.303 23.354.883a329.357 329.357 0 0 1 12.335 19.695a358.489 358.489 0 0 1 11.036 20.54a329.472 329.472 0 0 1-11 20.722Zm22.56-122.124c8.572 4.944 11.906 24.881 6.52 51.026c-.344 1.668-.73 3.367-1.15 5.09c-10.622-2.452-22.155-4.275-34.23-5.408c-7.034-10.017-14.323-19.124-21.64-27.008a160.789 160.789 0 0 1 5.888-5.4c18.9-16.447 36.564-22.941 44.612-18.3ZM128 90.808c12.625 0 22.86 10.235 22.86 22.86s-10.235 22.86-22.86 22.86s-22.86-10.235-22.86-22.86s10.235-22.86 22.86-22.86Z"></path></svg>
+
+
+===========================================================
+\src\components\commons\PageComponent.tsx
+===========================================================
+
+
+import * as React from 'react';
+import { PageResponse } from '../../interfaces/PageResponse';
+import { Todo } from '../../interfaces/Todo';
+
+
+
+interface PageProps {
+
+  serverData: PageResponse<Todo>
+
+  movePage: Function
+
+}
+
+const PageComponent: React.FC<PageProps> = ({serverData, movePage}: PageProps) => {
+
+  return (  
+    <div className="m-6 flex justify-center">
+
+    {serverData.prev ? 
+      <div 
+      className="m-2 p-2 w-16 text-center  font-bold text-blue-400 "
+      onClick={() => movePage({page:serverData.prevPage} )}>
+      Prev </div> : <></>}  
+
+      {serverData.pageNumList.map(pageNum => 
+      <div 
+      key={pageNum}
+      className={ `m-2 p-2 w-12  text-center rounded shadow-md text-white ${serverData.current === pageNum? 'bg-gray-500':'bg-blue-400'}`}
+      onClick={() => movePage( {page:pageNum})}>
+      {pageNum}
+      </div>
+
+      )}
+
+      {serverData.next ? 
+      <div 
+      className="m-2 p-2 w-16 text-center font-bold text-blue-400"
+      onClick={() => movePage( {page:serverData.nextPage})}> 
+      Next 
+      </div> : <></>}  
+
+    </div>   
+
+  );
+
+};
+
+export default PageComponent;
+
+
+===========================================================
+\src\components\commons\ResultModal.tsx
+===========================================================
+
+
+import * as React from 'react';
+
+interface ResultModalProps {
+  title: string,
+  content: string,
+  callbackFn: () => void
+}
+
+const ResultModal: React.FunctionComponent<ResultModalProps> = ({title,content,callbackFn}) => {
+  return ( 
+    <div 
+    className={`fixed top-0 left-0 z-[1055] flex h-full w-full  justify-center bg-black bg-opacity-20`}  
+    onClick={() => {
+      if(callbackFn) {
+        callbackFn()
+      }
+    }}>
+      <div 
+      className="absolute bg-white shadow dark:bg-gray-700 opacity-100 w-1/4 rounded  mt-10 mb-10 px-6 min-w-[600px]">
+        <div className="justify-center bg-warning-400 mt-6 mb-6 text-2xl border-b-4 border-gray-500">
+          {title}
+        </div>
+        <div className="text-4xl  border-orange-400 border-b-4 pt-4 pb-4">
+          {content}
+        </div>
+        <div className="justify-end flex ">
+          <button 
+          className="rounded bg-blue-500 mt-4 mb-4 px-6 pt-4 pb-4 text-lg text-white" 
+          onClick={() => {
+            if(callbackFn) {
+              callbackFn()
+            }
+          }}>Close Modal</button>
+        </div>
+      </div>
+    </div>  
+   );
+}
+ 
+export default ResultModal;
+
+
+===========================================================
+\src\components\menus\BasicMenu.tsx
+===========================================================
+import { Link } from "react-router-dom";
+
+const BasicMenu = () => {
+    return (
+        <nav id='navbar' className=" flex bg-blue-300">
+
+            <div className="w-4/5 bg-gray-500" >
+                <ul className="flex p-4 text-white font-bold">
+                    <li className="pr-6 text-2xl">
+                        <Link to={'/'}>Main</Link>
+                    </li>
+                    <li className="pr-6 text-2xl">
+                        <Link to={'/about'}>About</Link>
+                    </li>
+                    <li className="pr-6 text-2xl">
+                        <Link to={'/todo/'}>Todo</Link>
+                    </li>
+
+
+                </ul>
+            </div>
+
+            <div className="w-1/5 flex justify-end bg-orange-300 p-4 font-medium">
+                <div className="text-white text-sm m-1 rounded" >
+                    Login
+                </div>
+            </div>
+        </nav>
+    );
+}
+
+export default BasicMenu;
+
+
+===========================================================
+\src\components\todo\AddComponent.tsx
+===========================================================
+import { useState } from "react"
+import { AddResultType,  postAdd } from "../../apis/todoApi";
+import ResultModal from "../commons/ResultModal";
+import useCustomMove, { TCustomMove } from "../../hooks/useCustomMove";
+import { Todo , TodoInputType} from "../../interfaces/Todo";
+
+
+
+
+const AddComponent : React.FC<Record<string, never>> = ()=> {
+
+  const [todo, setTodo] = useState<TodoInputType>({
+    title: '',
+    writer: '',
+    dueDate: ''
+  })
+
+  const [result, setResult] = useState<AddResultType|null>()
+
+  const {moveToList}:TCustomMove = useCustomMove()
+
+  const handleChangeTodo = (e:React.ChangeEvent<HTMLInputElement> ):void => {
+
+    if (e.target.name in todo) {
+      todo[e.target.name as keyof TodoInputType] = e.target.value;
+    } 
+
+    setTodo({ ...todo });
+  }
+
+  const handleClickAdd = () : void => {
+
+    console.log(todo)
+
+    //console.log(todo)
+    postAdd(todo)
+    .then(data => {
+       console.log(data)
+       
+       setResult(data)
+       setTodo({  title: '',    writer: '',    dueDate: ''  })
+
+    }).catch(e => {
+       console.error(e)
+    })
+  }
+
+  const closeModal = (): void => {
+
+    setResult(null)
+    moveToList()
+  }
+
+
+
+  return (
+    <div className = "border-2 border-sky-200 mt-10 m-2 p-4"> 
+
+      {/* 모달 처리 */}
+      {result ? <ResultModal title={'Add Result'} content={`New ${result.TNO} Added`} callbackFn={closeModal}/>: <></>}
+
+      <div className="flex justify-center">
+        <div className="relative mb-4 flex w-full flex-wrap items-stretch">
+          <div className="w-1/5 p-6 text-right font-bold">TITLE</div>
+          <input className="w-4/5 p-6 rounded-r border border-solid border-neutral-500 shadow-md" 
+           name="title"
+           type={'text'} 
+           value={todo.title}
+           onChange={handleChangeTodo}
+           >
+           </input>
+
+        </div>
+      </div>
+      <div className="flex justify-center">
+        <div className="relative mb-4 flex w-full flex-wrap items-stretch">
+          <div className="w-1/5 p-6 text-right font-bold">WRITER</div>
+          <input className="w-4/5 p-6 rounded-r border border-solid border-neutral-500 shadow-md" 
+           name="writer"
+           type={'text'} 
+           value={todo.writer}
+           onChange={handleChangeTodo}
+           >
+           </input>
+        </div>  
+      </div>
+      <div className="flex justify-center">
+        <div className="relative mb-4 flex w-full flex-wrap items-stretch">
+          <div className="w-1/5 p-6 text-right font-bold">DUEDATE</div>
+          <input className="w-4/5 p-6 rounded-r border border-solid border-neutral-500 shadow-md" 
+           name="dueDate"
+           type={'date'} 
+           value={todo.dueDate}
+           onChange={handleChangeTodo}
+           >
+           </input>
+        </div>
+      </div>
+      <div className="flex justify-end">
+        <div className="relative mb-4 flex p-4 flex-wrap items-stretch">
+          <button type="button" 
+          className="rounded p-4 w-36 bg-blue-500 text-xl  text-white "
+          onClick={handleClickAdd}          
+          >
+          ADD
+          </button>
+        </div>
+      </div>
+    </div>
+
+  )
+}
+
+export default AddComponent
+
+
+===========================================================
+\src\components\todo\ListComponent.tsx
+===========================================================
+
+
+import * as React from 'react';
+import useCustomMove, { TCustomMove } from '../../hooks/useCustomMove';
+import { PageResponse } from '../../interfaces/PageResponse';
+import { Todo } from '../../interfaces/Todo';
+import { getList } from '../../apis/todoApi';
+import PageComponent from '../commons/PageComponent';
+
+
+const ListComponent : React.FC<Record<string, never>> = ()=> {
+
+  const {page,size, moveToList, refresh, moveToRead}:TCustomMove = useCustomMove()
+
+  const [serverData, setServerData] = React.useState<PageResponse<Todo>>()
+
+  React.useEffect(() => {
+
+
+    getList({page,size}).then( (data: PageResponse<Todo>) => {
+
+      setServerData(data)
+
+    })
+
+
+
+  },[page,size, refresh])
+
+  if(!serverData) {
+    return <></>
+  }
+
+
+  return (
+  <div className="border-2 border-blue-100 mt-10 mr-2 ml-2">
+
+    <div className="flex flex-wrap mx-auto justify-center p-6">
+
+      {serverData.dtoList.map(todo =>
+
+      <div
+      key= {todo.tno} 
+      className="w-full min-w-[400px]  p-2 m-2 rounded shadow-md"
+      onClick={() => moveToRead(todo.tno)} //이벤트 처리 추가 
+      >  
+
+        <div className="flex ">
+          <div className="font-extrabold text-2xl p-2 w-1/12">
+            {todo.tno}
+          </div>
+          <div className="text-1xl m-1 p-2 w-8/12 font-extrabold">
+            {todo.title}
+          </div>
+          <div className="text-1xl m-1 p-2 w-2/10 font-medium">
+            {todo.dueDate}
+          </div>
+        </div>
+      </div>
+      )}
+    </div>
+
+    <PageComponent serverData={serverData} movePage={moveToList}></PageComponent>
+
+  </div>
+
+  )
+     
+  ;
+};
+
+export default ListComponent;
+
+
+===========================================================
+\src\components\todo\ModifyComponent.tsx
+===========================================================
+import { useEffect, useState } from "react";
+import { Todo } from "../../interfaces/Todo";
+import { TodoInputType, UpdateDeleteResultType, deleteOne, getOne, putOne } from "../../apis/todoApi";
+import useCustomMove, { TCustomMove } from "../../hooks/useCustomMove";
+import ResultModal from "../commons/ResultModal";
+
+const initState = {
+  tno:0,
+  title:'',
+  writer: '',
+  dueDate: '',
+  complete: false
+}
+
+interface Tno {
+
+  tno:number 
+
+}
+
+const ModifyComponent = ({tno}:Tno) => {
+
+  const [todo, setTodo] = useState<Todo>({...initState})
+
+  //모달 창을 위한 상태 
+  const [result, setResult] = useState<UpdateDeleteResultType>()
+
+  //이동을 위한 기능들 
+  const {moveToList, moveToRead}: TCustomMove = useCustomMove()
+
+
+
+  useEffect(() => {
+
+    getOne(tno).then(data =>  setTodo(data))
+
+  },[tno])
+
+  const handleChangeTodo = (e:React.ChangeEvent<HTMLInputElement>) => {
+
+    const prop:string = e.target.name
+
+    const value:any = e.target.value
+
+    if (prop === 'title') {
+      todo.title = value
+    }else if(prop === 'dueDate'){
+      todo.dueDate = value
+    }
+    setTodo({...todo})
+  }
+
+  const handleChangeTodoComplete = (e:React.ChangeEvent<HTMLSelectElement>) => {
+
+    const value = e.target.value
+
+    todo.complete = (value === 'Y')
+
+    setTodo({...todo})
+  }
+
+  const handleClickModify = () => { //버튼 클릭시 
+
+    putOne(todo).then(data => {
+      console.log("modify result: " + data)
+      setResult({result:'Modified'})
+    })
+  }
+
+  const handleClickDelete = () => { //버튼 클릭시 
+
+    deleteOne(tno).then( data => {
+      console.log("delete result: " + data)
+      setResult({result:'Deleted'})
+    })
+
+  }
+
+  //모달 창이 close될때 
+  const closeModal = () => {
+
+    if(result?.result ==='Deleted') {
+      moveToList()
+    }else {
+      moveToRead(tno)
+    }
+    
+  }
+  
+
+
+
+  return ( 
+<div className = "border-2 border-sky-200 mt-10 m-2 p-4"> 
+
+{result ? <ResultModal title={'처리결과'} content={result.result} callbackFn={closeModal}></ResultModal>  :<></>}
+
+<div className="flex justify-center mt-10">
+  <div className="relative mb-4 flex w-full flex-wrap items-stretch">
+    <div className="w-1/5 p-6 text-right font-bold">TNO</div>
+    <div className="w-4/5 p-6 rounded-r border border-solid shadow-md bg-gray-100">
+      {todo.tno}        
+    </div>  
+  </div>
+</div>
+<div className="flex justify-center">
+  <div className="relative mb-4 flex w-full flex-wrap items-stretch">
+    <div className="w-1/5 p-6 text-right font-bold">WRITER</div>
+    <div className="w-4/5 p-6 rounded-r border border-solid shadow-md bg-gray-100">
+      {todo.writer}        
+    </div>
+
+  </div>
+</div>
+<div className="flex justify-center">
+  <div className="relative mb-4 flex w-full flex-wrap items-stretch">
+    <div className="w-1/5 p-6 text-right font-bold">TITLE</div>
+    <input className="w-4/5 p-6 rounded-r border border-solid border-neutral-300 shadow-md" 
+     name="title"
+     type={'text'} 
+     value={todo.title}
+     onChange={handleChangeTodo}
+     >
+     </input>
+  </div>  
+</div>
+<div className="flex justify-center">
+  <div className="relative mb-4 flex w-full flex-wrap items-stretch">
+    <div className="w-1/5 p-6 text-right font-bold">DUEDATE</div>
+    <input className="w-4/5 p-6 rounded-r border border-solid border-neutral-300 shadow-md" 
+     name="dueDate"
+     type={'date'} 
+     value={todo.dueDate}
+     onChange={handleChangeTodo}
+     >
+     </input>
+  </div>
+</div>
+<div className="flex justify-center">
+  <div className="relative mb-4 flex w-full flex-wrap items-stretch">
+    <div className="w-1/5 p-6 text-right font-bold">COMPLETE</div>
+    <select
+      name="status" 
+      className="border-solid border-2 rounded m-1 p-2"
+      onChange={handleChangeTodoComplete} 
+      value = {todo.complete? 'Y':'N'} >
+      <option value='Y'>Completed</option>
+      <option value='N'>Not Yet</option>
+    </select>
+  </div>
+</div>
+
+<div className="flex justify-end p-4">
+  <button type="button" 
+    className="inline-block rounded p-4 m-2 text-xl w-32 text-white bg-red-500"
+    onClick={handleClickDelete}
+  >
+    Delete
+  </button>
+  <button type="button" 
+    className="rounded p-4 m-2 text-xl w-32 text-white bg-blue-500"
+    onClick={handleClickModify}
+  >
+    Modify
+  </button>  
+</div>
+</div>
+
+   );
+}
+ 
+export default ModifyComponent;
+
+
+===========================================================
+\src\components\todo\ReadComponent.tsx
+===========================================================
+import * as React from 'react';
+import { getOne } from '../../apis/todoApi';
+
+import {Todo} from '../../interfaces/Todo'
+import useCustomMove,  {TCustomMove} from '../../hooks/useCustomMove';
+
+interface Tno {
+
+    tno:number 
+
+}
+
+const ReadComponent: React.FunctionComponent<Tno> = ({tno}:Tno):JSX.Element => {
+
+
+  const [todo, setTodo] = React.useState<Todo>()
+
+  const {moveToList, moveToModify}: TCustomMove = useCustomMove()
+
+
+  React.useEffect(() => {
+
+    getOne(tno).then( (data:Todo) => {
+      console.log(data)
+      setTodo(data)
+    })
+
+  },[tno])
+  
+  if(!todo) {
+    return <></>
+  }
+
+  return (  
+    <div className = "border-2 border-sky-200 mt-10 m-2 p-4 ">
+        
+      {makeDiv('Tno', todo.tno)}
+      {makeDiv('Writer', todo.writer)}
+      {makeDiv('Title', todo.title)}
+      {makeDiv('Due Date', todo.dueDate)}
+      {makeDiv('Complete', todo.complete ? 'Completed' : 'Not Yet')}
+
+      {/* buttons.........start */}
+      <div className="flex justify-end p-4">
+
+        <button type="button" 
+          className="rounded p-4 m-2 text-xl w-32 text-white bg-blue-500"
+          onClick={() => moveToList()}
+        >
+          List
+        </button>
+
+        <button type="button" 
+        className="rounded p-4 m-2 text-xl w-32 text-white bg-red-500"
+        onClick={() => moveToModify(tno)}
+      >
+        Modify
+      </button>
+
+
+      </div>
+  
+    </div>
+    )
+}
+  
+  const makeDiv = (title:string, value: string |number) : JSX.Element =>       
+  <div className="flex justify-center">
+    <div className="relative mb-4 flex w-full flex-wrap items-stretch">
+      <div className="w-1/5 p-6 text-right font-bold">{title}</div>
+      <div className="w-4/5 p-6 rounded-r border border-solid shadow-md">
+      {value}        
+      </div>
+    </div>
+
+
+
+  </div>
+  
+
+
+export default ReadComponent;
+
+
+===========================================================
+\src\hooks\useCustomMove.ts
+===========================================================
+import { createSearchParams, useNavigate, useSearchParams } from "react-router-dom"
+import { PageParam } from "../interfaces/PageParam"
+import { useState } from "react"
+
+
+
+export interface TCustomMove {
+
+  moveToList: (param?:PageParam) => void,
+  moveToModify: (num:number) => void,
+  moveToRead: (num:number) => void,
+  page: number,
+  size: number,
+  refresh: boolean
+
+}
+
+
+
+const getNum  = (param: string | null, defaultValue: number) : number => {
+
+  if(!param){
+    return defaultValue
+  }
+
+  return parseInt(param)
+}
+
+
+
+
+const useCustomMove = () : TCustomMove => {
+
+  const navigate = useNavigate()
+  
+  const [queryParams] = useSearchParams();
+
+  const [refresh, setRefresh] = useState<boolean>(false) //추가 
+
+  const page: number = getNum( queryParams.get('page'), 1)
+
+  const size: number = getNum( queryParams.get('size'), 10)
+
+  const queryDefault = createSearchParams({page: page.toString(), size: size.toString()}).toString() //새로 추가
+
+
+
+  const moveToList = (pageParam?: PageParam):void => {
+
+    let queryStr = ""
+
+    if(pageParam){
+
+      const pageNum = pageParam.page || 1
+      const sizeNum = pageParam.size || 10
+
+      console.log("-----------------")
+      console.log(pageNum, sizeNum)
+
+      queryStr = createSearchParams({page:pageNum.toString(), size: sizeNum.toString()}).toString()
+
+    }else {
+      queryStr = queryDefault
+    }
+
+    setRefresh(!refresh) //추가 
+
+    navigate({pathname: `../list`,search:queryStr})
+  }
+
+  const moveToModify =  (num: number) : void => {
+
+    console.log(queryDefault)
+
+    navigate({
+      pathname: `../modify/${num}`,
+      search: queryDefault  //수정시에 기존의 쿼리 스트링 유지를 위해 
+    })
+  }
+
+  const moveToRead = (num:number) => {
+
+    console.log(queryDefault)
+
+    navigate({
+      pathname: `../read/${num}`,
+      search: queryDefault
+    })
+  }
+
+
+
+  return {moveToList, page, size, moveToModify, refresh, moveToRead}
+
+
+
+}
+
+
+export default useCustomMove
+
+
+===========================================================
+\src\index.css
+===========================================================
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+===========================================================
+\src\interfaces\PageParam.ts
+===========================================================
+
+
+export interface PageParam {
+
+  page: number,
+  size: number
+
+}
+
+
+===========================================================
+\src\interfaces\PageResponse.ts
+===========================================================
+
+
+export interface PageResponse<T> {
+
+    totalCount: number, 
+    prevPage: number, 
+    nextPage: number, 
+    totalPage: number, 
+    current: number
+
+    prev:boolean
+    next:boolean
+
+    pageNumList:[number]
+
+    dtoList:[T]
+
+}
+
+
+===========================================================
+\src\interfaces\Todo.ts
+===========================================================
+export interface Todo {
+
+    tno: number,
+    title: string,
+    writer: string,
+    complete: boolean,
+    dueDate: string
+
+}
+
+export type TodoInputType = Omit<Todo, 'tno'|'complete'>;
+
+
+===========================================================
+\src\layouts\BasicLayout.tsx
+===========================================================
+import {PropsWithChildren} from 'react';
+import BasicMenu from "../components/menus/BasicMenu.tsx";
+
+function BasicLayout({ children }: PropsWithChildren) {
+    return (
+        <>
+
+            {/* 기존 헤더 대신 BasicMenu*/ }
+            <BasicMenu/>
+
+            {/* 상단 여백 my-5 제거 */}
+            <div
+                className="bg-white my-5 w-full flex flex-col space-y-1 md:flex-row md:space-x-1 md:space-y-0">
+
+                <main
+                    className="bg-sky-300 md:w-4/5 lg:w-3/4 px-5 py-5"> {/* 상단 여백 py-40 변경 flex 제거 */}
+                    {children}
+                </main>
+
+                <aside
+                    className="bg-green-300 md:w-1/5 lg:w-1/4 px-5 flex py-5"> {/* 상단 여백 py-40 제거 flex 제거 */}
+
+                    <h1 className="text-2xl md:text-4xl">Sidebar</h1>
+
+                </aside>
+
+            </div>
+        </>
+
+
+    );
+}
+
+export default BasicLayout;
+
+
+===========================================================
+\src\main.tsx
+===========================================================
+import React from 'react'
+import ReactDOM from 'react-dom/client'
+import App from './App.tsx'
+import './index.css'
+
+ReactDOM.createRoot(document.getElementById('root')!).render(
+
+    <App />
+  
+)
+
+
+===========================================================
+\src\pages\AboutPage.tsx
+===========================================================
+import BasicLayout from "../layouts/BasicLayout.tsx";
+
+function AboutPage() {
+    return (
+        <BasicLayout>
+            <div className={'text-3xl'}>About Page</div>
+        </BasicLayout>
+    );
+}
+
+export default AboutPage;
+
+
+===========================================================
+\src\pages\MainPage.tsx
+===========================================================
+
+
+import BasicLayout from "../layouts/BasicLayout.tsx";
+
+function MainPage() {
+    return (
+        <BasicLayout>
+            <div className={'text-3xl'}>Main Page</div>
+        </BasicLayout>
+    );
+}
+
+export default MainPage;
+
+
+===========================================================
+\src\pages\todo\AddPage.tsx
+===========================================================
+import { useState } from "react";
+import AddComponent from "../../components/todo/AddComponent";
+import { Todo } from "../../interfaces/Todo";
+
+
+
+
+function AddPage()   {
+
+
+
+
+    return (
+        <div className="p-4 w-full bg-white">
+        <div className="text-3xl font-extrabold">
+          Todo Add Page 
+        </div> 
+    
+        <AddComponent/>
+    
+      </div>
+    
+
+    );
+}
+
+export default AddPage;
+
+
+===========================================================
+\src\pages\todo\IndexPage.tsx
+===========================================================
+import { Outlet, useNavigate} from "react-router-dom";
+import BasicLayout from "../../layouts/BasicLayout";
+
+const IndexPage:React.FC<Record<string, never>> = () => {
+
+    const navigate  = useNavigate()
+
+    const handleClickList = () : void => {
+        navigate({pathname:'list'})
+    }
+    const handleClickAdd = () : void => {
+        navigate({pathname:'add'})
+    }
+
+
+    return (
+        <BasicLayout>
+            <div className="w-full flex m-2 p-2 ">
+                <div
+                    className="text-xl m-1 p-2 w-20 font-extrabold text-center underline"
+                    onClick={handleClickList}
+                >LIST</div>
+                <div
+                    className="text-xl m-1 p-2 w-20 font-extrabold text-center underline"
+                    onClick={handleClickAdd}
+                >ADD</div>
+            </div>
+            <div className="flex flex-wrap w-full">
+                <Outlet/>
+            </div>
+        </BasicLayout>
+    );
+}
+
+export default IndexPage;
+
+
+===========================================================
+\src\pages\todo\ListPage.tsx
+===========================================================
+import ListComponent from "../../components/todo/ListComponent";
+
+const ListPage:React.FC<Record<string, never>> = () => {
+
+    return (
+        <div className="p-4 w-full bg-white">
+        <div className="text-3xl font-extrabold">
+          Todo List Page Component 
+        </div> 
+    
+        <ListComponent/>
+    
+      </div>
+    
+    );
+}
+
+export default ListPage;
+
+
+===========================================================
+\src\pages\todo\ModifyPage.tsx
+===========================================================
+import {  useParams } from "react-router-dom";
+import ModifyComponent from "../../components/todo/ModifyComponent";
+
+
+
+const ModifyPage: React.FC<Record<string, never>> = () => {
+
+    const {tno} = useParams<{tno:string}>()
+
+
+    const tnoNumber: number = tno ? parseInt(tno) : 0
+   
+    return ( 
+    <div className="p-4 w-full bg-white">
+        <div className="text-3xl font-extrabold">
+            Todo Modify Page  
+        </div> 
+
+        <ModifyComponent tno={tnoNumber}/>
+
+    </div>
+
+    );
+}
+   
+
+    
+export default ModifyPage
+
+
+===========================================================
+\src\pages\todo\ReadPage.tsx
+===========================================================
+
+import { useParams } from "react-router-dom";
+import ReadComponent from "../../components/todo/ReadComponent";
+
+
+const ReadPage:React.FC<Record<string, never>> = () => {
+
+    const {tno} = useParams<{ tno: string }>();
+
+
+    const tnoNumber: number = tno ? parseInt(tno) : 0
+    
+   
+    return ( 
+        <div className="font-extrabold w-full bg-white mt-6">
+
+        <div className="text-2xl ">
+        Todo Read Page Component {tno}
+        </div>
+
+        <ReadComponent tno={tnoNumber}></ReadComponent>
+
+        </div> 
+
+    );
+   
+}
+
+export default ReadPage
+
+
+===========================================================
+\src\router\productRouter.tsx
+===========================================================
+
+import { ReactElement, Suspense, lazy } from 'react';
+import { Navigate } from 'react-router-dom';
+
+const Loading = <div>Loading....</div>
+const ProductsList =  lazy(() => import("../pages/products/ListPage.tsx"))
+
+const ProductsAdd =  lazy(() => import("../pages/products/AddPage.tsx"))
+
+
+const productRouter  = ():Array<{path:string, element:ReactElement}>  => {
+  return [
+    {
+      path: "list",
+      element: <Suspense fallback={Loading}><ProductsList/></Suspense>
+    },
+    {
+      path: "",
+      element: <Navigate replace to="/products/list"/>
+    },
+    {
+      path: "add",
+      element: <Suspense fallback={Loading}><ProductsAdd/></Suspense>
+    }, 
+
+  ]
+}
+
+export default productRouter;
+
+
+===========================================================
+\src\router\root.tsx
+===========================================================
+import {createBrowserRouter} from "react-router-dom";
+import {ComponentType, lazy,  ReactNode, Suspense} from "react";
+import todoRouter from "./todoRouter.tsx";
+
+
+const Loading: ReactNode  = <div>Loading,,,,</div>
+
+const Main:ComponentType = lazy(() => import('../pages/MainPage'))
+
+const About:ComponentType = lazy(() => import('../pages/AboutPage'))
+
+const TodoIndex: ComponentType = lazy(() => import("../pages/todo/IndexPage.tsx"))
+
+
+
+const root = createBrowserRouter([
+    {
+        path: '',
+        element: <Suspense fallback={Loading}><Main/></Suspense>
+    },
+    {
+        path: 'about',
+        element: <Suspense fallback={Loading}><About/></Suspense>
+    },
+    {
+        path: 'todo',
+        element: <Suspense fallback={Loading}><TodoIndex/></Suspense>,
+        children: todoRouter()
+    },
+
+])
+
+export default root
+
+
+
+
+
+===========================================================
+\src\router\todoRouter.tsx
+===========================================================
+
+import {Suspense, lazy, ReactNode, ComponentType, ReactElement} from "react";
+import {Navigate} from "react-router-dom";
+
+const Loading:ReactNode = <div>Loading....</div>
+const TodoList:ComponentType = lazy(() => import("../pages/todo/ListPage"))
+const TodoRead:ComponentType = lazy(() => import("../pages/todo/ReadPage"))
+
+const TodoAdd:ComponentType = lazy(() => import("../pages/todo/AddPage"))
+
+const TodoModify:ComponentType = lazy(() => import("../pages/todo/ModifyPage"))
+
+
+const todoRouter = ():Array<{path:string, element:ReactElement}> => {
+
+    return [
+        {
+            path: "list",
+            element: <Suspense fallback={Loading}><TodoList/></Suspense>
+        },
+        {
+            path: "",
+            element: <Navigate replace to="list"/>
+        },
+        {
+            path: "read/:tno",
+            element: <Suspense fallback={Loading}><TodoRead/></Suspense>
+        },
+        {
+            path: "modify/:tno",
+            element: <Suspense fallback={Loading}><TodoModify/></Suspense>
+        },
+        {
+            path: "add",
+            element: <Suspense fallback={Loading}><TodoAdd/></Suspense>
+        },
+
+    ]
+
+}
+
+export default todoRouter
+
+
+===========================================================
+\src\vite-env.d.ts
+===========================================================
+/// <reference types="vite/client" />
+
+

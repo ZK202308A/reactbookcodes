@@ -1,0 +1,2431 @@
+.gitignore
+.gradle
+bin
+build.gradle
+gradle
+gradlew
+gradlew.bat
+HELP.md
+settings.gradle
+src
+upload
+===========================================================
+\src\main\java\org\zerock\mallapi\config\CustomSecurityConfig.java
+===========================================================
+package org.zerock.mallapi.config;
+
+import java.util.Arrays;
+
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.zerock.mallapi.security.filter.JWTCheckFilter;
+import org.zerock.mallapi.security.handler.APILoginFailHandler;
+import org.zerock.mallapi.security.handler.APILoginSuccessHandler;
+import org.zerock.mallapi.security.handler.CustomAccessDeniedHandler;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
+
+@Configuration
+@Log4j2
+@RequiredArgsConstructor
+@EnableMethodSecurity
+public class CustomSecurityConfig {
+
+  @Bean
+  public PasswordEncoder passwordEncoder(){
+    return new BCryptPasswordEncoder();
+  }
+
+
+@Bean
+  public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    
+    log.info("---------------------security config---------------------------");
+
+    http.cors(httpSecurityCorsConfigurer -> {
+      httpSecurityCorsConfigurer.configurationSource(corsConfigurationSource());
+    });
+
+    http.sessionManagement(sessionConfig ->  sessionConfig.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+
+    http.csrf(config -> config.disable());
+
+    http.formLogin(config -> {
+      config.loginPage("/api/member/login");
+      config.successHandler(new APILoginSuccessHandler());
+      config.failureHandler(new APILoginFailHandler());
+    });
+
+    http.addFilterBefore(new JWTCheckFilter(), UsernamePasswordAuthenticationFilter.class); //JWT체크 
+
+    http.exceptionHandling(config -> {
+      config.accessDeniedHandler(new CustomAccessDeniedHandler());
+    });
+
+
+    return http.build();
+  }
+
+
+
+
+    @Bean
+  public CorsConfigurationSource corsConfigurationSource() {
+
+    CorsConfiguration configuration = new CorsConfiguration();
+
+    configuration.setAllowedOriginPatterns(Arrays.asList("*"));
+    configuration.setAllowedMethods(Arrays.asList("HEAD", "GET", "POST", "PUT", "DELETE"));
+    configuration.setAllowedHeaders(Arrays.asList("Authorization", "Cache-Control", "Content-Type"));
+    configuration.setAllowCredentials(true);
+
+    UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+    source.registerCorsConfiguration("/**", configuration);
+
+    return source;
+  }
+  
+}
+
+
+===========================================================
+\src\main\java\org\zerock\mallapi\config\CustomServletConfig.java
+===========================================================
+package org.zerock.mallapi.config;
+
+import org.springframework.context.annotation.Configuration;
+import org.springframework.format.FormatterRegistry;
+import org.springframework.web.servlet.config.annotation.CorsRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+import org.zerock.mallapi.controller.formatter.LocalDateFormatter;
+
+@Configuration
+public class CustomServletConfig implements WebMvcConfigurer{
+
+  @Override
+  public void addFormatters(FormatterRegistry registry) {
+    
+    registry.addFormatter(new LocalDateFormatter());
+  }
+
+  // @Override
+  // public void addCorsMappings(CorsRegistry registry) {
+
+  //   registry.addMapping("/**")
+  //           .allowedOrigins("*")
+  //           .allowedMethods("HEAD", "GET", "POST", "PUT", "DELETE", "OPTIONS")
+  //           .maxAge(300)
+  //           .allowedHeaders("Authorization", "Cache-Control", "Content-Type");
+  // }
+
+}
+
+
+===========================================================
+\src\main\java\org\zerock\mallapi\config\RootConfig.java
+===========================================================
+package org.zerock.mallapi.config;
+
+import org.springframework.context.annotation.Configuration;
+
+import org.modelmapper.ModelMapper;
+import org.modelmapper.convention.MatchingStrategies;
+import org.springframework.context.annotation.Bean;
+
+@Configuration
+public class RootConfig {
+
+  @Bean
+  public ModelMapper getMapper() {
+    ModelMapper modelMapper = new ModelMapper();
+    modelMapper.getConfiguration()
+            .setFieldMatchingEnabled(true)
+            .setFieldAccessLevel(org.modelmapper.config.Configuration.AccessLevel.PRIVATE)
+            .setMatchingStrategy(MatchingStrategies.LOOSE);
+
+    return modelMapper;
+  }
+}
+
+
+===========================================================
+\src\main\java\org\zerock\mallapi\controller\advice\CustomControllerAdvice.java
+===========================================================
+package org.zerock.mallapi.controller.advice;
+
+import java.util.Map;
+import java.util.NoSuchElementException;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.zerock.mallapi.util.CustomJWTException;
+
+/**
+ * CustomControllerAdvice
+ */
+@RestControllerAdvice
+public class CustomControllerAdvice {
+
+
+  @ExceptionHandler(NoSuchElementException.class)
+  protected ResponseEntity<?> notExist(NoSuchElementException e) {
+
+      String msg = e.getMessage();
+
+      return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("msg", msg));
+  }
+
+  @ExceptionHandler(MethodArgumentNotValidException.class)
+  protected ResponseEntity<?> handleIllegalArgumentException(MethodArgumentNotValidException e) {
+
+      String msg = e.getMessage();
+
+      return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body(Map.of("msg", msg));
+  }
+
+  @ExceptionHandler(CustomJWTException.class)
+  protected ResponseEntity<?> handleJWTException(CustomJWTException e) {
+
+      String msg = e.getMessage();
+
+      return ResponseEntity.ok().body(Map.of("error", msg));
+  }
+
+}
+
+
+===========================================================
+\src\main\java\org\zerock\mallapi\controller\APIRefreshController.java
+===========================================================
+package org.zerock.mallapi.controller;
+
+import java.util.Map;
+
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import org.zerock.mallapi.util.CustomJWTException;
+import org.zerock.mallapi.util.JWTUtil;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
+
+@RestController
+@RequiredArgsConstructor
+@Log4j2
+public class APIRefreshController {
+
+  @RequestMapping("/api/member/refresh")
+  public Map<String, Object> refresh(@RequestHeader("Authorization") String authHeader, String refreshToken){
+
+    if(refreshToken == null) {
+      throw new CustomJWTException("NULL_REFRASH");
+    }
+    
+    if(authHeader == null || authHeader.length() < 7) {
+      throw new CustomJWTException("INVALID_STRING");
+    }
+
+    String accessToken = authHeader.substring(7);
+
+    //Access 토큰이 만료되지 않았다면 
+    if(checkExpiredToken(accessToken) == false ) {
+      return Map.of("accessToken", accessToken, "refreshToken", refreshToken);
+    }
+
+    //Refresh토큰 검증 
+    Map<String, Object> claims = JWTUtil.validateToken(refreshToken);
+
+    log.info("refresh ... claims: " + claims);
+
+    String newAccessToken = JWTUtil.generateToken(claims, 10);
+
+    String newRefreshToken =  checkTime((Integer)claims.get("exp")) == true? JWTUtil.generateToken(claims, 60*24) : refreshToken;
+
+    return Map.of("accessToken", newAccessToken, "refreshToken", newRefreshToken);
+
+  }
+
+  //시간이 1시간 미만으로 남았다면
+  private boolean checkTime(Integer exp) {
+
+    //JWT exp를 날짜로 변환
+    java.util.Date expDate = new java.util.Date( (long)exp * (1000 ));
+
+    //현재 시간과의 차이 계산 - 밀리세컨즈
+    long gap   = expDate.getTime() - System.currentTimeMillis();
+
+    //분단위 계산 
+    long leftMin = gap / (1000 * 60);
+
+    //1시간도 안남았는지.. 
+    return leftMin < 60;
+  }
+
+  private boolean checkExpiredToken(String token) {
+
+    try{
+      JWTUtil.validateToken(token);
+    }catch(CustomJWTException ex) {
+      if(ex.getMessage().equals("Expired")){
+          return true;
+      }
+    }
+    return false;
+  }
+  
+}
+
+
+===========================================================
+\src\main\java\org\zerock\mallapi\controller\formatter\LocalDateFormatter.java
+===========================================================
+package org.zerock.mallapi.controller.formatter;
+
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.Locale;
+
+import org.springframework.format.Formatter;
+
+/**
+ * LocalDateFormatter
+ */
+public class LocalDateFormatter implements Formatter<LocalDate>{
+
+  @Override
+  public LocalDate parse(String text, Locale locale) {
+      return LocalDate.parse(text, DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+  }
+
+  @Override
+  public String print(LocalDate object, Locale locale) {
+      return DateTimeFormatter.ofPattern("yyyy-MM-dd").format(object);
+  }
+  
+}
+
+
+===========================================================
+\src\main\java\org\zerock\mallapi\controller\ProductController.java
+===========================================================
+package org.zerock.mallapi.controller;
+
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import org.springframework.core.io.Resource;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
+import org.zerock.mallapi.dto.PageRequestDTO;
+import org.zerock.mallapi.dto.PageResponseDTO;
+import org.zerock.mallapi.dto.ProductDTO;
+import org.zerock.mallapi.service.ProductService;
+import org.zerock.mallapi.util.CustomFileUtil;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
+
+@RestController
+@RequiredArgsConstructor
+@Log4j2
+@RequestMapping("/api/products")
+public class ProductController {
+
+  private final ProductService productService; //ProductServcie 주입 
+  private final CustomFileUtil fileUtil;
+
+  @PostMapping("/")
+  public Map<String, Long> register(ProductDTO productDTO){
+    
+    log.info("rgister: " + productDTO);
+
+    List<MultipartFile> files = productDTO.getFiles();
+
+    List<String> uploadFileNames = fileUtil.saveFiles(files);
+
+    productDTO.setUploadFileNames(uploadFileNames);
+
+    log.info(uploadFileNames);
+
+    //서비스 호출 
+    Long pno = productService.register(productDTO);
+
+    try {
+      Thread.sleep(2000);
+    } catch (InterruptedException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    }
+
+
+    return Map.of("result", pno);
+  }
+
+  
+  // @PostMapping("/")
+  // public Map<String, String> register(ProductDTO productDTO){
+    
+  //   log.info("rgister: " + productDTO);
+
+  //   List<MultipartFile> files = productDTO.getFiles();
+
+  //   List<String> uploadFileNames = fileUtil.saveFiles(files);
+
+  //   productDTO.setUploadFileNames(uploadFileNames);
+
+  //   log.info(uploadFileNames);
+
+  //   return Map.of("RESULT", "SUCCESS");
+  // }
+
+  @GetMapping("/view/{fileName}")
+  public ResponseEntity<Resource> viewFileGET(@PathVariable String fileName){
+
+    return fileUtil.getFile(fileName);
+
+  }
+
+  @PreAuthorize("hasAnyRole('ROLE_USER','ROLE_ADMIN')") //임시로 권한 설정 
+  @GetMapping("/list")
+  public PageResponseDTO<ProductDTO> list(PageRequestDTO pageRequestDTO) {
+
+    log.info("list............." + pageRequestDTO);
+
+    try {
+      Thread.sleep(2000);
+    } catch (InterruptedException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    }
+
+    return productService.getList(pageRequestDTO);
+    
+  }
+
+  @GetMapping("/{pno}")
+  public ProductDTO read(@PathVariable(name="pno") Long pno) {
+
+    try {
+      Thread.sleep(2000);
+    } catch (InterruptedException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    }
+
+    return productService.get(pno);
+  }
+
+  @PutMapping("/{pno}")
+  public Map<String, String> modify(@PathVariable(name="pno")Long pno, ProductDTO productDTO) {
+
+    productDTO.setPno(pno); 
+
+    ProductDTO oldProductDTO = productService.get(pno);
+
+    //기존의 파일들 (데이터베이스에 존재하는 파일들 - 수정 과정에서 삭제되었을 수 있음)  
+    List<String> oldFileNames = oldProductDTO.getUploadFileNames();
+    
+    //새로 업로드 해야 하는 파일들  
+    List<MultipartFile> files = productDTO.getFiles();
+
+    //새로 업로드되어서 만들어진 파일 이름들
+    List<String> currentUploadFileNames = fileUtil.saveFiles(files);
+
+    //화면에서 변화 없이 계속 유지된 파일들 
+    List<String> uploadedFileNames = productDTO.getUploadFileNames();
+
+    //유지되는 파일들  + 새로 업로드된 파일 이름들이 저장해야 하는 파일 목록이 됨  
+    if(currentUploadFileNames != null && currentUploadFileNames.size() > 0) {
+
+      uploadedFileNames.addAll(currentUploadFileNames);
+
+    }
+    //수정 작업 
+    productService.modify(productDTO);
+
+    if(oldFileNames != null && oldFileNames.size() > 0){
+
+      //지워야 하는 파일 목록 찾기 
+      //예전 파일들 중에서 지워져야 하는 파일이름들 
+      List<String> removeFiles =  oldFileNames
+      .stream()
+      .filter(fileName -> uploadedFileNames.indexOf(fileName) == -1).collect(Collectors.toList());
+
+      //실제 파일 삭제 
+      fileUtil.deleteFiles(removeFiles);
+    }
+    return Map.of("RESULT", "SUCCESS");
+  }
+
+  @DeleteMapping("/{pno}")
+  public Map<String, String> remove(@PathVariable("pno") Long pno) {
+
+    //삭제해야할 파일들 알아내기 
+    List<String> oldFileNames =  productService.get(pno).getUploadFileNames();
+
+    productService.remove(pno);
+
+    fileUtil.deleteFiles(oldFileNames);
+
+    return Map.of("RESULT", "SUCCESS");
+
+  }
+
+
+
+}
+
+
+===========================================================
+\src\main\java\org\zerock\mallapi\controller\TodoController.java
+===========================================================
+package org.zerock.mallapi.controller;
+
+import java.util.Map;
+
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import org.zerock.mallapi.dto.PageRequestDTO;
+import org.zerock.mallapi.dto.PageResponseDTO;
+import org.zerock.mallapi.dto.TodoDTO;
+import org.zerock.mallapi.service.TodoService;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
+
+
+@RestController
+@RequiredArgsConstructor
+@Log4j2
+@RequestMapping("/api/todo")
+public class TodoController {
+  
+  private final TodoService service;
+
+  @GetMapping("/{tno}")
+  public TodoDTO get(@PathVariable(name ="tno") Long tno) {
+
+    return service.get(tno);
+  }
+
+  @GetMapping("/list")
+  public PageResponseDTO<TodoDTO> list(PageRequestDTO pageRequestDTO ) {
+
+    log.info(pageRequestDTO);
+
+    return service.list(pageRequestDTO);
+  }
+
+  @PostMapping("/")
+  public Map<String, Long> register(@RequestBody TodoDTO todoDTO){
+   
+    log.info("TodoDTO: " + todoDTO);
+
+    Long tno = service.register(todoDTO);
+    
+    return Map.of("TNO", tno);
+  }
+
+  @PutMapping("/{tno}")
+  public Map<String, String> modify( 
+    @PathVariable(name="tno") Long tno, 
+    @RequestBody TodoDTO todoDTO) {
+
+    todoDTO.setTno(tno);
+
+    log.info("Modify: " + todoDTO);
+
+    service.modify(todoDTO);
+
+    return Map.of("RESULT", "SUCCESS");
+  }
+
+  @DeleteMapping("/{tno}")
+  public Map<String, String> remove( @PathVariable(name="tno") Long tno ){
+
+    log.info("Remove:  " + tno);
+
+    service.remove(tno);
+
+    return Map.of("RESULT", "SUCCESS");
+  }
+
+
+
+}
+
+
+===========================================================
+\src\main\java\org\zerock\mallapi\domain\Member.java
+===========================================================
+package org.zerock.mallapi.domain;
+
+import jakarta.persistence.*;
+import lombok.*;
+
+import java.util.*;
+
+@Entity
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+@Getter
+@ToString (exclude = "memberRoleList")
+public class Member {
+
+  @Id
+  private String email;
+
+  private String pw;
+
+  private String nickname;
+
+  private boolean social;
+
+  @ElementCollection(fetch = FetchType.LAZY)
+  @Builder.Default
+  private List<MemberRole> memberRoleList = new ArrayList<>();
+
+  public void addRole(MemberRole memberRole){
+
+      memberRoleList.add(memberRole);
+  }
+
+  public void clearRole(){
+      memberRoleList.clear();
+  }
+
+  public void changeNickname(String nickname) {
+    this.nickname = nickname;
+  }
+
+  public void changePw(String pw){
+    this.pw = pw;
+  }
+
+  public void changeSocial(boolean social) {
+    this.social = social;
+  }
+
+}
+
+
+===========================================================
+\src\main\java\org\zerock\mallapi\domain\MemberRole.java
+===========================================================
+package org.zerock.mallapi.domain;
+
+public enum MemberRole {
+
+    USER, MANAGER,ADMIN;
+}
+
+
+===========================================================
+\src\main\java\org\zerock\mallapi\domain\Product.java
+===========================================================
+package org.zerock.mallapi.domain;
+
+import jakarta.persistence.*;
+import lombok.*;
+
+import java.util.ArrayList;
+import java.util.List;
+
+@Entity
+@Table(name = "tbl_product")
+@Getter
+@ToString(exclude = "imageList")
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class Product {
+
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long pno;
+
+  private String pname;
+
+  private int price;
+
+  private String pdesc;
+
+  private boolean delFlag;
+
+
+  public void changeDel(boolean delFlag) {
+    this.delFlag = delFlag;
+  }
+
+
+  @ElementCollection
+  @Builder.Default
+  private List<ProductImage> imageList = new ArrayList<>();
+
+  public void changePrice(int price) {
+    this.price = price;
+  }
+
+  public void changeDesc(String desc){
+      this.pdesc = desc;
+  }
+
+  public void changeName(String name){
+      this.pname = name;
+  }
+
+  public void addImage(ProductImage image) {
+
+      image.setOrd(this.imageList.size());
+      imageList.add(image);
+  }
+
+  public void addImageString(String fileName){
+
+    ProductImage productImage = ProductImage.builder()
+    .fileName(fileName)
+    .build();
+    addImage(productImage);
+
+  }
+
+  public void clearList() {
+      this.imageList.clear();
+  }
+}
+
+
+===========================================================
+\src\main\java\org\zerock\mallapi\domain\ProductImage.java
+===========================================================
+package org.zerock.mallapi.domain;
+
+import jakarta.persistence.Embeddable;
+import lombok.*;
+
+@Embeddable
+@Getter
+@ToString
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class ProductImage {
+
+    private String fileName; 
+
+    private int ord;
+
+    public void setOrd(int ord){
+        this.ord = ord;
+    }
+
+}
+
+
+===========================================================
+\src\main\java\org\zerock\mallapi\domain\Todo.java
+===========================================================
+package org.zerock.mallapi.domain;
+
+import java.time.LocalDate;
+
+import jakarta.persistence.*;
+import lombok.*;
+
+@Entity
+@Table(name = "tbl_todo")
+@Getter
+@ToString
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class Todo {
+  
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long tno;
+  
+  private String title;
+
+  private String writer;
+
+  private boolean complete;
+
+  private LocalDate dueDate;
+
+  public void changeTitle(String title){
+    this.title = title;
+  }
+
+  public void changeComplete(boolean complete){
+    this.complete = complete;
+  }
+
+  public void changeDueDate(LocalDate dueDate){
+    this.dueDate = dueDate;
+  }
+
+
+}
+
+
+===========================================================
+\src\main\java\org\zerock\mallapi\dto\MemberDTO.java
+===========================================================
+package org.zerock.mallapi.dto;
+
+import java.util.*;
+import java.util.stream.Collectors;
+
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.User;
+
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
+
+@Getter
+@Setter
+@ToString
+public class MemberDTO extends User {
+
+  private String email;
+    
+  private String pw;
+
+  private String nickname;
+
+  private boolean social;
+
+  private List<String> roleNames = new ArrayList<>();
+
+  public MemberDTO(String email, String pw, String nickname, boolean social, List<String> roleNames) {
+    super(
+      email,
+      pw, 
+      roleNames.stream().map(str -> new SimpleGrantedAuthority("ROLE_"+str)).collect(Collectors.toList()));
+    
+    this.email = email;
+    this.pw = pw;
+    this.nickname = nickname;
+    this.social = social;
+    this.roleNames = roleNames;
+  }
+
+  public Map<String, Object> getClaims() {
+
+    Map<String, Object> dataMap = new HashMap<>();
+
+    dataMap.put("email", email);
+    dataMap.put("pw",pw);
+    dataMap.put("nickname", nickname);
+    dataMap.put("social", social);
+    dataMap.put("roleNames", roleNames);
+
+    return dataMap;
+  }
+
+}
+
+
+===========================================================
+\src\main\java\org\zerock\mallapi\dto\PageRequestDTO.java
+===========================================================
+package org.zerock.mallapi.dto;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
+
+@Data
+@SuperBuilder
+@AllArgsConstructor
+@NoArgsConstructor
+public class PageRequestDTO {
+
+  @Builder.Default
+  private int page = 1;
+
+  @Builder.Default
+  private int size = 10;
+}
+
+
+===========================================================
+\src\main\java\org\zerock\mallapi\dto\PageResponseDTO.java
+===========================================================
+package org.zerock.mallapi.dto;
+
+import lombok.Builder;
+import lombok.Data;
+
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
+@Data
+public class PageResponseDTO<E> {
+
+  private List<E> dtoList;
+
+  private List<Integer> pageNumList;
+
+  private PageRequestDTO pageRequestDTO;
+
+  private boolean prev, next;
+
+  private int totalCount, prevPage, nextPage, totalPage, current;
+
+  @Builder(builderMethodName = "withAll")
+  public PageResponseDTO(List<E> dtoList, PageRequestDTO pageRequestDTO, long totalCount) {
+
+    this.dtoList = dtoList;
+    this.pageRequestDTO = pageRequestDTO;
+    this.totalCount = (int)totalCount;
+
+    int end =   (int)(Math.ceil( pageRequestDTO.getPage() / 10.0 )) *  10;
+
+    int start = end - 9;
+
+    int last =  (int)(Math.ceil((totalCount/(double)pageRequestDTO.getSize())));
+
+    end =  end > last ? last: end;
+
+    this.prev = start > 1;
+
+
+    this.next =  totalCount > end * pageRequestDTO.getSize();
+
+    this.pageNumList = IntStream.rangeClosed(start,end).boxed().collect(Collectors.toList());
+
+    if(prev) {
+        this.prevPage = start -1;
+    }
+
+    if(next) {
+        this.nextPage = end + 1;
+    }
+
+    this.totalPage = this.pageNumList.size();
+
+    this.current = pageRequestDTO.getPage();
+
+  }
+}
+
+
+===========================================================
+\src\main\java\org\zerock\mallapi\dto\ProductDTO.java
+===========================================================
+package org.zerock.mallapi.dto;
+
+import lombok.*;
+import java.util.*;
+import org.springframework.web.multipart.MultipartFile;
+
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class ProductDTO {
+  
+  private Long pno;
+
+  private String pname;
+
+  private int price;
+
+  private String pdesc;
+
+  private boolean delFlag;
+
+  @Builder.Default
+  private List<MultipartFile> files = new ArrayList<>();
+
+  @Builder.Default
+  private List<String> uploadFileNames = new ArrayList<>();
+
+}
+
+
+===========================================================
+\src\main\java\org\zerock\mallapi\dto\TodoDTO.java
+===========================================================
+package org.zerock.mallapi.dto;
+
+import com.fasterxml.jackson.annotation.JsonFormat;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.time.LocalDate;
+
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class TodoDTO {
+
+  private Long tno;
+
+  private String title;
+
+  private String writer;
+
+  private boolean complete;
+
+  @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
+  private LocalDate dueDate;
+}
+
+
+===========================================================
+\src\main\java\org\zerock\mallapi\MallapiApplication.java
+===========================================================
+package org.zerock.mallapi;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
+public class MallapiApplication {
+
+	public static void main(String[] args) {
+		SpringApplication.run(MallapiApplication.class, args);
+	}
+
+}
+
+
+===========================================================
+\src\main\java\org\zerock\mallapi\repository\MemberRepository.java
+===========================================================
+package org.zerock.mallapi.repository;
+
+import org.springframework.data.jpa.repository.*;
+import org.springframework.data.repository.query.Param;
+import org.zerock.mallapi.domain.Member;
+
+public interface MemberRepository extends JpaRepository<Member, String> {
+
+  @EntityGraph(attributePaths = {"memberRoleList"})
+  @Query("select m from Member m where m.email = :email")
+  Member getWithRoles(@Param("email") String email);
+
+}
+
+
+===========================================================
+\src\main\java\org\zerock\mallapi\repository\ProductRepository.java
+===========================================================
+package org.zerock.mallapi.repository;
+
+import java.util.Optional;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.zerock.mallapi.domain.Product;
+
+public interface ProductRepository extends JpaRepository<Product, Long>{
+
+  @EntityGraph(attributePaths = "imageList")
+  @Query("select p from Product p where p.pno = :pno")
+  Optional<Product> selectOne(@Param("pno") Long pno);
+
+  @Modifying
+  @Query("update Product p set p.delFlag = :flag where p.pno = :pno")
+  void updateToDelete(@Param("pno") Long pno , @Param("flag") boolean flag);
+
+  
+  @Query("select p, pi  from Product p left join p.imageList pi  where pi.ord = 0 and p.delFlag = false ")
+  Page<Object[]> selectList(Pageable pageable);
+}
+
+
+===========================================================
+\src\main\java\org\zerock\mallapi\repository\TodoRepository.java
+===========================================================
+package org.zerock.mallapi.repository;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.zerock.mallapi.domain.Todo;
+
+public interface TodoRepository extends JpaRepository<Todo, Long>{
+  
+}
+
+
+===========================================================
+\src\main\java\org\zerock\mallapi\security\CustomUserDetailsService.java
+===========================================================
+package org.zerock.mallapi.security;
+
+import java.util.stream.Collectors;
+
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.stereotype.Service;
+import org.zerock.mallapi.domain.Member;
+import org.zerock.mallapi.dto.MemberDTO;
+import org.zerock.mallapi.repository.MemberRepository;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
+
+/**
+ * CustomUSerDetailsService
+ */
+@Service
+@Log4j2
+@RequiredArgsConstructor
+public class CustomUserDetailsService implements UserDetailsService{
+
+  private final MemberRepository memberRepository;
+
+  @Override
+  public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+    
+    log.info("----------------loadUserByUsername-----------------------------");
+
+    Member member = memberRepository.getWithRoles(username);
+
+    if(member == null){
+      throw new UsernameNotFoundException("Not Found");
+    }
+
+    MemberDTO memberDTO = new MemberDTO(
+            member.getEmail(),
+            member.getPw(),
+            member.getNickname(),
+            member.isSocial(),
+            member.getMemberRoleList()
+                  .stream()
+                  .map(memberRole -> memberRole.name()).collect(Collectors.toList()));
+
+    log.info(memberDTO);
+
+    return memberDTO;
+
+  }
+  
+}
+
+
+===========================================================
+\src\main\java\org\zerock\mallapi\security\filter\JWTCheckFilter.java
+===========================================================
+package org.zerock.mallapi.security.filter;
+
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.filter.OncePerRequestFilter;
+import org.zerock.mallapi.dto.MemberDTO;
+import org.zerock.mallapi.util.JWTUtil;
+
+import com.google.gson.Gson;
+
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import lombok.extern.log4j.Log4j2;
+
+@Log4j2
+public class JWTCheckFilter extends OncePerRequestFilter {
+
+  @Override
+  protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
+
+    // Preflight요청은 체크하지 않음 
+    if(request.getMethod().equals("OPTIONS")){
+      return true;
+    }
+
+    String path = request.getRequestURI();
+
+    log.info("check uri.............." + path);
+
+    //api/member/ 경로의 호출은 체크하지 않음 
+    if(path.startsWith("/api/member/")) {
+      return true;
+    }
+
+    //이미지 조회 경로는 체크하지 않는다면 
+    if(path.startsWith("/api/products/view/")) {
+      return true;
+    }
+
+    return false;
+  }
+
+
+  @Override
+  protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
+
+    log.info("------------------------JWTCheckFilter.......................");
+
+    String authHeaderStr = request.getHeader("Authorization");
+
+    try {
+      //Bearer accestoken...
+      String accessToken = authHeaderStr.substring(7);
+      Map<String, Object> claims = JWTUtil.validateToken(accessToken);
+
+      log.info("JWT claims: " + claims);
+
+      //filterChain.doFilter(request, response); //이하 추가 
+
+      String email = (String) claims.get("email");
+      String pw = (String) claims.get("pw");
+      String nickname = (String) claims.get("nickname");
+      Boolean social = (Boolean) claims.get("social");
+      List<String> roleNames = (List<String>) claims.get("roleNames");
+
+      MemberDTO memberDTO = new MemberDTO(email, pw, nickname, social.booleanValue(), roleNames);
+
+      log.info("-----------------------------------");
+      log.info(memberDTO);
+      log.info(memberDTO.getAuthorities());
+
+      UsernamePasswordAuthenticationToken authenticationToken
+      = new UsernamePasswordAuthenticationToken(memberDTO, pw, memberDTO.getAuthorities());
+
+      SecurityContextHolder.getContext().setAuthentication(authenticationToken);
+
+      filterChain.doFilter(request, response);
+
+    }catch(Exception e){
+
+      log.error("JWT Check Error..............");
+      log.error(e.getMessage());
+
+      Gson gson = new Gson();
+      String msg = gson.toJson(Map.of("error", "ERROR_ACCESS_TOKEN"));
+
+      response.setContentType("application/json");
+      PrintWriter printWriter = response.getWriter();
+      printWriter.println(msg);
+      printWriter.close();
+
+    }
+  }
+
+
+}
+
+
+===========================================================
+\src\main\java\org\zerock\mallapi\security\handler\APILoginFailHandler.java
+===========================================================
+package org.zerock.mallapi.security.handler;
+
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.Map;
+
+import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.web.authentication.AuthenticationFailureHandler;
+
+import com.google.gson.Gson;
+
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import lombok.extern.log4j.Log4j2;
+
+@Log4j2
+public class APILoginFailHandler implements AuthenticationFailureHandler{
+
+  @Override
+  public void onAuthenticationFailure(HttpServletRequest request, HttpServletResponse response,
+      AuthenticationException exception) throws IOException, ServletException {
+
+    log.info("Login fail....." + exception);
+
+    Gson gson = new Gson();
+    
+    String jsonStr = gson.toJson(Map.of("error", "ERROR_LOGIN"));
+
+    response.setContentType("application/json");
+    PrintWriter printWriter = response.getWriter();
+    printWriter.println(jsonStr);
+    printWriter.close();    
+
+  }
+
+}
+
+
+===========================================================
+\src\main\java\org\zerock\mallapi\security\handler\APILoginSuccessHandler.java
+===========================================================
+package org.zerock.mallapi.security.handler;
+
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.Map;
+
+import org.springframework.security.core.Authentication;
+import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
+import org.zerock.mallapi.dto.MemberDTO;
+import org.zerock.mallapi.util.JWTUtil;
+
+import com.google.gson.Gson;
+
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import lombok.extern.log4j.Log4j2;
+
+@Log4j2
+public class APILoginSuccessHandler implements AuthenticationSuccessHandler{
+
+@Override
+  public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
+      Authentication authentication) throws IOException, ServletException {
+
+    log.info("-------------------------------------");
+    log.info(authentication);
+    log.info("-------------------------------------");
+
+    MemberDTO memberDTO = (MemberDTO)authentication.getPrincipal();
+
+    Map<String, Object> claims = memberDTO.getClaims();
+
+    String accessToken = JWTUtil.generateToken(claims, 10);
+    String refreshToken = JWTUtil.generateToken(claims,60*24);
+
+    claims.put("accessToken", accessToken);
+    claims.put("refreshToken", refreshToken);
+
+    Gson gson = new Gson();
+    
+    String jsonStr = gson.toJson(claims);
+
+    response.setContentType("application/json; charset=UTF-8");
+    PrintWriter printWriter = response.getWriter();
+    printWriter.println(jsonStr);
+    printWriter.close();
+
+  }
+
+  
+}
+
+
+===========================================================
+\src\main\java\org\zerock\mallapi\security\handler\CustomAccessDeniedHandler.java
+===========================================================
+package org.zerock.mallapi.security.handler;
+
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.Map;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.web.access.AccessDeniedHandler;
+
+import com.google.gson.Gson;
+
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
+public class CustomAccessDeniedHandler implements AccessDeniedHandler{
+
+  @Override
+  public void handle(HttpServletRequest request, HttpServletResponse response,
+      AccessDeniedException accessDeniedException) throws IOException, ServletException {
+
+    Gson gson = new Gson();
+    
+    String jsonStr = gson.toJson(Map.of("error", "ERROR_ACCESSDENIED"));
+
+    response.setContentType("application/json");
+    response.setStatus(HttpStatus.FORBIDDEN.value());
+    PrintWriter printWriter = response.getWriter();
+    printWriter.println(jsonStr);
+    printWriter.close();        
+
+  }
+  
+}
+
+
+===========================================================
+\src\main\java\org\zerock\mallapi\service\ProductService.java
+===========================================================
+package org.zerock.mallapi.service;
+
+import org.springframework.transaction.annotation.Transactional;
+import org.zerock.mallapi.dto.PageRequestDTO;
+import org.zerock.mallapi.dto.PageResponseDTO;
+import org.zerock.mallapi.dto.ProductDTO;
+
+@Transactional
+public interface ProductService {
+
+  PageResponseDTO<ProductDTO> getList(PageRequestDTO pageRequestDTO); 
+
+  Long register(ProductDTO productDTO);
+
+  ProductDTO get(Long pno);
+
+  void modify(ProductDTO productDTO);
+
+  void remove(Long pno);
+
+}
+
+
+===========================================================
+\src\main\java\org\zerock\mallapi\service\ProductServiceImpl.java
+===========================================================
+package org.zerock.mallapi.service;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.zerock.mallapi.domain.Product;
+import org.zerock.mallapi.domain.ProductImage;
+import org.zerock.mallapi.dto.PageRequestDTO;
+import org.zerock.mallapi.dto.PageResponseDTO;
+import org.zerock.mallapi.dto.ProductDTO;
+import org.zerock.mallapi.repository.ProductRepository;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
+
+@Service
+@Log4j2
+@RequiredArgsConstructor
+@Transactional
+public class ProductServiceImpl implements ProductService{
+
+  private final ProductRepository productRepository;
+
+  @Override
+  public PageResponseDTO<ProductDTO> getList(PageRequestDTO pageRequestDTO) {
+
+    log.info("getList..............");
+
+    Pageable pageable = PageRequest.of( 
+      pageRequestDTO.getPage() - 1,  //페이지 시작 번호가 0부터 시작하므로 
+      pageRequestDTO.getSize(), 
+      Sort.by("pno").descending());
+    
+    Page<Object[]>  result = productRepository.selectList(pageable);
+
+    
+    List<ProductDTO> dtoList = result.get().map(arr -> {
+
+      Product product = (Product) arr[0];
+      ProductImage productImage = (ProductImage) arr[1];
+
+      ProductDTO productDTO = ProductDTO.builder()
+      .pno(product.getPno())
+      .pname(product.getPname())
+      .pdesc(product.getPdesc())
+      .price(product.getPrice())
+      .build();
+
+      String imageStr = productImage.getFileName();
+      productDTO.setUploadFileNames(List.of(imageStr));
+
+      return productDTO;
+    }).collect(Collectors.toList());
+    
+    long totalCount = result.getTotalElements();
+
+    return PageResponseDTO.<ProductDTO>withAll()
+                .dtoList(dtoList)
+                .totalCount(totalCount)
+                .pageRequestDTO(pageRequestDTO)
+                .build();
+  }
+
+  @Override
+  public Long register(ProductDTO productDTO) {
+
+    Product product = dtoToEntity(productDTO);
+
+    Product result = productRepository.save(product);
+    
+    return result.getPno();
+  }
+
+  private Product dtoToEntity(ProductDTO productDTO){
+
+    Product product = Product.builder()
+    .pno(productDTO.getPno())
+    .pname(productDTO.getPname())
+    .pdesc(productDTO.getPdesc())
+    .price(productDTO.getPrice())
+    .build();
+
+    //업로드 처리가 끝난 파일들의 이름 리스트 
+    List<String> uploadFileNames = productDTO.getUploadFileNames();
+
+    if(uploadFileNames == null){
+      return product;
+    }
+
+    uploadFileNames.stream().forEach(uploadName -> {
+    
+      product.addImageString(uploadName);
+    });
+
+    return product;
+  }
+
+  @Override
+  public ProductDTO get(Long pno) {
+    
+    java.util.Optional<Product> result = productRepository.selectOne(pno);
+
+    Product product = result.orElseThrow();
+    
+    ProductDTO productDTO = entityToDTO(product);
+
+    return productDTO;
+
+  }
+
+  private ProductDTO entityToDTO(Product product){
+
+    ProductDTO productDTO = ProductDTO.builder()
+    .pno(product.getPno())
+    .pname(product.getPname())
+    .pdesc(product.getPdesc())
+    .price(product.getPrice())
+    .build();
+
+    List<ProductImage> imageList = product.getImageList();
+    
+    if(imageList == null || imageList.size() == 0 ){
+      return productDTO;
+    }
+
+    List<String> fileNameList = imageList.stream().map(productImage -> 
+      productImage.getFileName()).toList();
+
+    productDTO.setUploadFileNames(fileNameList);
+
+    return productDTO;
+  }
+
+  @Override
+  public void modify(ProductDTO productDTO) {
+    
+    //step1 read
+    Optional<Product> result = productRepository.findById(productDTO.getPno());
+
+    Product product = result.orElseThrow();
+
+    //change pname, pdesc, price
+    product.changeName(productDTO.getPname());
+    product.changeDesc(productDTO.getPdesc());
+    product.changePrice(productDTO.getPrice());
+
+    //upload File -- clear first
+    product.clearList();
+
+    List<String> uploadFileNames = productDTO.getUploadFileNames();
+
+    if(uploadFileNames != null && uploadFileNames.size() > 0 ){
+      uploadFileNames.stream().forEach(uploadName -> {
+        product.addImageString(uploadName);
+      });
+    }
+    productRepository.save(product);
+  }
+
+  @Override
+  public void remove(Long pno) {
+    
+    productRepository.updateToDelete(pno, true);
+
+  }
+
+
+}
+
+
+===========================================================
+\src\main\java\org\zerock\mallapi\service\TodoService.java
+===========================================================
+package org.zerock.mallapi.service;
+
+import org.zerock.mallapi.dto.PageRequestDTO;
+import org.zerock.mallapi.dto.PageResponseDTO;
+import org.zerock.mallapi.dto.TodoDTO;
+
+public interface TodoService {
+  
+  Long register(TodoDTO todoDTO);
+
+  TodoDTO get(Long tno);
+
+  void modify(TodoDTO todoDTO);
+
+  void remove(Long tno);
+
+  PageResponseDTO<TodoDTO> list(PageRequestDTO pageRequestDTO);
+
+}
+
+
+===========================================================
+\src\main\java\org\zerock\mallapi\service\TodoServiceImpl.java
+===========================================================
+package org.zerock.mallapi.service;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+import org.modelmapper.ModelMapper;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.zerock.mallapi.domain.Todo;
+import org.zerock.mallapi.dto.PageRequestDTO;
+import org.zerock.mallapi.dto.PageResponseDTO;
+import org.zerock.mallapi.dto.TodoDTO;
+import org.zerock.mallapi.repository.TodoRepository;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
+
+@Service
+@Transactional
+@Log4j2
+@RequiredArgsConstructor  // 생성자 자동 주입
+public class TodoServiceImpl implements TodoService {
+
+  //자동주입 대상은 final로 
+  private final ModelMapper modelMapper;
+
+  private final TodoRepository todoRepository;
+
+  @Override
+  public Long register(TodoDTO todoDTO) {
+    
+    log.info(".........");
+
+    Todo todo = modelMapper.map(todoDTO, Todo.class);
+
+    Todo savedTodo = todoRepository.save(todo);
+
+    return savedTodo.getTno();
+
+  }
+
+  @Override
+  public TodoDTO get(Long tno) {
+    
+    java.util.Optional<Todo> result = todoRepository.findById(tno);
+
+    Todo todo = result.orElseThrow();
+
+    TodoDTO dto = modelMapper.map(todo, TodoDTO.class);
+
+    return dto;
+  }
+
+  @Override
+  public void modify(TodoDTO todoDTO) {
+
+    Optional<Todo> result = todoRepository.findById(todoDTO.getTno());
+
+    Todo todo = result.orElseThrow();
+
+    todo.changeTitle(todoDTO.getTitle());
+    todo.changeDueDate(todoDTO.getDueDate());
+    todo.changeComplete(todoDTO.isComplete());
+ 
+    todoRepository.save(todo);
+
+  }
+
+  @Override
+  public void remove(Long tno) {
+    
+    todoRepository.deleteById(tno);
+
+  }
+
+  @Override
+  public PageResponseDTO<TodoDTO> list(PageRequestDTO pageRequestDTO) {
+
+    Pageable pageable = 
+      PageRequest.of( 
+        pageRequestDTO.getPage() - 1 ,  // 1페이지가 0이므로 주의 
+        pageRequestDTO.getSize(), 
+        Sort.by("tno").descending());
+
+    Page<Todo> result = todoRepository.findAll(pageable);    
+
+    List<TodoDTO> dtoList = result.getContent().stream()
+      .map(todo -> modelMapper.map(todo, TodoDTO.class))
+      .collect(Collectors.toList());
+    
+    long totalCount = result.getTotalElements();
+
+    PageResponseDTO<TodoDTO> responseDTO = PageResponseDTO.<TodoDTO>withAll()
+      .dtoList(dtoList)
+      .pageRequestDTO(pageRequestDTO)
+      .totalCount(totalCount)
+      .build();
+
+    return responseDTO;
+  }
+
+
+}
+
+
+===========================================================
+\src\main\java\org\zerock\mallapi\util\CustomFileUtil.java
+===========================================================
+package org.zerock.mallapi.util;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
+import net.coobird.thumbnailator.Thumbnails;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Component;
+import org.springframework.web.multipart.MultipartFile;
+
+import jakarta.annotation.PostConstruct;
+
+@Component
+@Log4j2
+@RequiredArgsConstructor
+public class CustomFileUtil {
+
+  @Value("${org.zerock.upload.path}")
+  private String uploadPath;
+
+  @PostConstruct
+  public void init() {
+    File tempFolder = new File(uploadPath);
+
+    if(tempFolder.exists() == false) {
+      tempFolder.mkdir();
+    }
+
+    uploadPath = tempFolder.getAbsolutePath();
+
+    log.info("-------------------------------------");
+    log.info(uploadPath);
+  }
+
+  public List<String> saveFiles(List<MultipartFile> files)throws RuntimeException{
+
+    if(files == null || files.size() == 0){
+      return null; 
+    }
+
+    List<String> uploadNames = new ArrayList<>();
+
+    for (MultipartFile multipartFile : files) {
+        
+      String savedName = UUID.randomUUID().toString() + "_" + multipartFile.getOriginalFilename();
+      
+      Path savePath = Paths.get(uploadPath, savedName);
+
+      try {
+        Files.copy(multipartFile.getInputStream(), savePath);
+
+        String contentType = multipartFile.getContentType();
+
+        if(contentType != null && contentType.startsWith("image")){ //이미지여부 확인
+
+          Path thumbnailPath = Paths.get(uploadPath, "s_"+savedName);
+
+          Thumbnails.of(savePath.toFile())
+                  .size(400,400)
+                  .toFile(thumbnailPath.toFile());
+        }
+
+        uploadNames.add(savedName);
+      } catch (IOException e) {
+        throw new RuntimeException(e.getMessage());
+      }
+    }//end for
+    return uploadNames;
+  }
+
+  public ResponseEntity<Resource> getFile(String fileName) {
+    
+    Resource resource = new FileSystemResource(uploadPath+ File.separator + fileName);
+
+    if(!resource.exists()) {
+
+      resource = new FileSystemResource(uploadPath+ File.separator + "default.jpeg");
+    
+    }
+
+    HttpHeaders headers = new HttpHeaders();
+
+    try{
+        headers.add("Content-Type", Files.probeContentType( resource.getFile().toPath() ));
+    } catch(Exception e){
+        return ResponseEntity.internalServerError().build();
+    }
+    return ResponseEntity.ok().headers(headers).body(resource);
+  }
+
+
+  public void deleteFiles(List<String> fileNames) {
+
+    if(fileNames == null || fileNames.size() == 0){
+      return;
+    }
+
+    fileNames.forEach(fileName -> {
+
+      //썸네일이 있는지 확인하고 삭제 
+      String thumbnailFileName = "s_" + fileName;
+      Path thumbnailPath = Paths.get(uploadPath, thumbnailFileName);
+      Path filePath = Paths.get(uploadPath, fileName);
+
+      try {
+        Files.deleteIfExists(filePath);
+        Files.deleteIfExists(thumbnailPath);
+      } catch (IOException e) {
+        throw new RuntimeException(e.getMessage());
+      }
+    });
+  }
+
+
+
+}
+
+
+===========================================================
+\src\main\java\org\zerock\mallapi\util\CustomJWTException.java
+===========================================================
+package org.zerock.mallapi.util;
+
+public class CustomJWTException extends RuntimeException{
+
+  public CustomJWTException(String msg){
+      super(msg);
+  }
+}
+
+
+===========================================================
+\src\main\java\org\zerock\mallapi\util\JWTUtil.java
+===========================================================
+package org.zerock.mallapi.util;
+
+import io.jsonwebtoken.*;
+import io.jsonwebtoken.security.Keys;
+import lombok.extern.log4j.Log4j2;
+
+import java.time.ZonedDateTime;
+import java.util.*;
+
+import javax.crypto.SecretKey;
+
+@Log4j2
+public class JWTUtil {
+
+  private static String key = "1234567890123456789012345678901234567890";
+
+  public static String generateToken(Map<String, Object> valueMap, int min) {
+
+    SecretKey key = null;
+
+    try{
+      key = Keys.hmacShaKeyFor(JWTUtil.key.getBytes("UTF-8"));
+    
+    }catch(Exception e){
+        throw new RuntimeException(e.getMessage());
+    }
+
+    String jwtStr = Jwts.builder()
+            .setHeader(Map.of("typ","JWT"))
+            .setClaims(valueMap)
+            .setIssuedAt(Date.from(ZonedDateTime.now().toInstant()))
+            .setExpiration(Date.from(ZonedDateTime.now().plusMinutes(min).toInstant()))
+            .signWith(key)
+            .compact();
+
+    return jwtStr;
+  }
+
+  public static Map<String, Object> validateToken(String token) {
+
+    Map<String, Object> claim = null;
+    
+    try{
+
+      SecretKey key = Keys.hmacShaKeyFor(JWTUtil.key.getBytes("UTF-8"));
+
+      claim = Jwts.parserBuilder()
+              .setSigningKey(key)
+              .build()
+              .parseClaimsJws(token) // 파싱 및 검증, 실패 시 에러
+              .getBody();
+              
+    }catch(MalformedJwtException malformedJwtException){
+        throw new CustomJWTException("MalFormed");
+    }catch(ExpiredJwtException expiredJwtException){
+        throw new CustomJWTException("Expired");
+    }catch(InvalidClaimException invalidClaimException){
+        throw new CustomJWTException("Invalid");
+    }catch(JwtException jwtException){
+        throw new CustomJWTException("JWTError");
+    }catch(Exception e){
+        throw new CustomJWTException("Error");
+    }
+    return claim;
+  }
+
+}
+
+
+===========================================================
+\src\main\resources\application.properties
+===========================================================
+
+spring.datasource.driver-class-name=org.mariadb.jdbc.Driver
+spring.datasource.url=jdbc:mariadb://localhost:3306/malldb
+spring.datasource.username=malldbuser
+spring.datasource.password=malldbuser
+
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.properties.hibernate.format_sql=true
+spring.jpa.show-sql=true
+
+
+spring.servlet.multipart.max-request-size=30MB
+spring.servlet.multipart.max-file-size=10MB
+
+org.zerock.upload.path=upload
+
+logging.level.org.springframework.security.web=trace
+
+
+===========================================================
+\src\test\java\org\zerock\mallapi\MallapiApplicationTests.java
+===========================================================
+package org.zerock.mallapi;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.context.SpringBootTest;
+
+@SpringBootTest
+class MallapiApplicationTests {
+
+	@Test
+	void contextLoads() {
+	}
+
+}
+
+
+===========================================================
+\src\test\java\org\zerock\mallapi\repository\MemberRepositoryTests.java
+===========================================================
+package org.zerock.mallapi.repository;
+
+import lombok.extern.log4j.Log4j2;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.zerock.mallapi.domain.Member;
+import org.zerock.mallapi.domain.MemberRole;
+
+@SpringBootTest
+@Log4j2
+public class MemberRepositoryTests {
+
+  @Autowired
+  private MemberRepository memberRepository;
+
+  @Autowired
+  private PasswordEncoder passwordEncoder;
+
+  @Test
+  public void testInsertMember(){
+
+    for (int i = 0; i < 10 ; i++) {
+
+      Member member = Member.builder()
+              .email("user"+i+"@aaa.com")
+              .pw(passwordEncoder.encode("1111"))
+              .nickname("USER"+i)
+              .build();
+
+      member.addRole(MemberRole.USER);
+
+      if(i >= 5){
+          member.addRole(MemberRole.MANAGER);
+      }
+
+      if(i >=8){
+          member.addRole(MemberRole.ADMIN);
+      }
+      memberRepository.save(member);
+    }
+  }
+
+  @Test
+  public void testRead() {
+
+    String email = "user9@aaa.com";
+
+    Member member = memberRepository.getWithRoles(email);
+
+    log.info("-----------------");
+    log.info(member);
+  }
+
+}
+
+
+===========================================================
+\src\test\java\org\zerock\mallapi\repository\ProductRepositoryTests.java
+===========================================================
+package org.zerock.mallapi.repository;
+
+import java.util.Arrays;
+import java.util.Optional;
+import java.util.UUID;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.test.annotation.Commit;
+import org.springframework.transaction.annotation.Transactional;
+import org.zerock.mallapi.domain.Product;
+
+import lombok.extern.log4j.Log4j2;
+
+@SpringBootTest
+@Log4j2
+public class ProductRepositoryTests {
+
+  @Autowired
+  ProductRepository productRepository;
+  
+  @Test
+  public void testInsert() {
+
+    for (int i = 0; i < 10; i++) {
+
+      Product product = Product.builder()
+      .pname("상품"+i)
+      .price(100*i)
+      .pdesc("상품설명 " + i)
+      .build();
+      
+      //2개의 이미지 파일 추가 
+      product.addImageString("IMAGE1.jpg");
+      product.addImageString("IMAGE2.jpg");
+      
+      productRepository.save(product);
+
+      log.info("-------------------");
+    }
+  }
+
+  @Transactional
+  @Test
+  public void testRead() {
+
+    Long pno = 1L;
+
+    Optional<Product> result = productRepository.findById(pno);
+
+    Product product = result.orElseThrow();
+
+    log.info(product); // --------- 1
+    log.info(product.getImageList()); // ---------------------2
+
+  }
+
+  @Test
+  public void testRead2() {
+
+    Long pno = 1L;
+
+    Optional<Product> result = productRepository.selectOne(pno);
+
+    Product product = result.orElseThrow();
+
+    log.info(product);
+    log.info(product.getImageList());
+    
+  }
+
+  @Commit
+  @Transactional
+  @Test
+  public void testDelte() {
+
+    Long pno = 2L;
+
+    productRepository.updateToDelete(pno, true);
+
+  }
+
+  @Test
+  public void testUpdate(){
+
+    Long pno = 10L;
+
+    Product product = productRepository.selectOne(pno).get();
+
+    product.changeName("10번 상품");
+    product.changeDesc("10번 상품 설명입니다.");
+    product.changePrice(5000);
+
+    //첨부파일 수정 
+    product.clearList();
+
+    product.addImageString(UUID.randomUUID().toString()+"_"+"NEWIMAGE1.jpg");
+    product.addImageString(UUID.randomUUID().toString()+"_"+"NEWIMAGE2.jpg");
+    product.addImageString(UUID.randomUUID().toString()+"_"+"NEWIMAGE3.jpg");
+
+    productRepository.save(product);
+
+  }
+
+  @Test
+  public void testList() {
+
+    //org.springframework.data.domain 패키지
+    Pageable pageable = PageRequest.of(0, 10, Sort.by("pno").descending());
+
+    Page<Object[]> result = productRepository.selectList(pageable);
+
+    //java.util
+    result.getContent().forEach(arr -> log.info(Arrays.toString(arr)));
+
+  }
+
+
+
+}
+
+
+===========================================================
+\src\test\java\org\zerock\mallapi\repository\TodoRepositoryTests.java
+===========================================================
+package org.zerock.mallapi.repository;
+
+import java.time.LocalDate;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.zerock.mallapi.domain.Todo;
+
+import lombok.extern.log4j.Log4j2;
+
+@SpringBootTest
+@Log4j2
+public class TodoRepositoryTests {
+
+  @Autowired
+  private TodoRepository todoRepository;
+
+  @Test
+  public void testInsert() {
+
+    for (int i = 1; i <= 100; i++) {
+
+      Todo todo = Todo.builder()
+      .title("Title..." + i)
+      .dueDate(LocalDate.of(2023,12,31))
+      .writer("user00")
+      .build();
+
+      todoRepository.save(todo);
+    }
+  }
+
+  @Test
+  public void testRead() {
+
+    //존재하는 번호로 확인 
+    Long tno = 33L;
+
+    java.util.Optional<Todo> result = todoRepository.findById(tno);
+
+    Todo todo = result.orElseThrow();
+
+    log.info(todo);
+  }
+
+  @Test
+  public void testModify() {
+
+    Long tno = 33L;
+
+    java.util.Optional<Todo> result = todoRepository.findById(tno); //java.util 패키지의 Optional
+
+    Todo todo = result.orElseThrow();
+    todo.changeTitle("Modified 33...");
+    todo.changeComplete(true);
+    todo.changeDueDate(LocalDate.of(2023,10,10));
+
+    todoRepository.save(todo);
+
+  }
+
+  @Test
+  public void testDelete() {
+    Long tno = 1L;
+
+    todoRepository.deleteById(tno);
+
+  }
+
+  @Test
+  public void testPaging() {
+
+    //import org.springframework.data.domain.Pageable;
+
+    Pageable pageable = PageRequest.of(0,10, Sort.by("tno").descending());
+
+    Page<Todo> result = todoRepository.findAll(pageable);
+
+    log.info(result.getTotalElements());
+
+    result.getContent().stream().forEach(todo -> log.info(todo));
+
+  }
+
+
+
+}
+
+
+===========================================================
+\src\test\java\org\zerock\mallapi\service\ProductServiceTests.java
+===========================================================
+package org.zerock.mallapi.service;
+
+import java.util.UUID;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+
+import org.zerock.mallapi.dto.PageRequestDTO;
+import org.zerock.mallapi.dto.PageResponseDTO;
+import org.zerock.mallapi.dto.ProductDTO;
+
+import lombok.extern.log4j.Log4j2;
+
+@SpringBootTest
+@Log4j2
+public class ProductServiceTests {
+  
+  @Autowired
+  ProductService productService;
+
+  @Test
+  public void testList() {
+
+    //1 page, 10 size 
+    PageRequestDTO pageRequestDTO = PageRequestDTO.builder().build();
+
+    PageResponseDTO<ProductDTO> result = productService.getList(pageRequestDTO);
+
+    result.getDtoList().forEach(dto -> log.info(dto));
+
+  }
+
+  @Test
+  public void testRegister() {
+
+    ProductDTO productDTO = ProductDTO.builder()
+    .pname("새로운 상품")
+    .pdesc("신규 추가 상품입니다.")
+    .price(1000)
+    .build();
+
+    //uuid가 있어야 함
+    productDTO.setUploadFileNames(
+      java.util.List.of(
+        UUID.randomUUID()+"_" +"Test1.jpg",
+        UUID.randomUUID()+"_" +"Test2.jpg"));
+
+    productService.register(productDTO);
+
+  }
+
+  @Test
+  public void testRead() {
+
+    //실제 존재하는 번호로 테스트 
+    Long pno = 12L; 
+
+    ProductDTO productDTO = productService.get(pno);
+
+    log.info(productDTO);
+    log.info(productDTO.getUploadFileNames());
+
+  }
+
+
+}
+
+
+===========================================================
+\src\test\java\org\zerock\mallapi\service\TodoServiceTests.java
+===========================================================
+package org.zerock.mallapi.service;
+
+import java.time.LocalDate;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.zerock.mallapi.dto.PageRequestDTO;
+import org.zerock.mallapi.dto.PageResponseDTO;
+import org.zerock.mallapi.dto.TodoDTO;
+
+import lombok.extern.log4j.Log4j2;
+
+@SpringBootTest
+@Log4j2
+public class TodoServiceTests {
+  
+  @Autowired
+  private TodoService todoService;
+
+  @Test
+  public void testRegister() {
+
+    TodoDTO todoDTO = TodoDTO.builder()
+    .title("서비스 테스트")
+    .writer("tester")
+    .dueDate(LocalDate.of(2023,10,10))
+    .build();
+
+    Long tno = todoService.register(todoDTO);
+
+    log.info("TNO: " + tno);
+    
+  }
+
+  @Test
+  public void testGet() {
+
+    Long tno = 101L;
+
+    TodoDTO todoDTO = todoService.get(tno);
+
+    log.info(todoDTO);
+
+  }
+
+  @Test
+  public void testList() {
+
+    PageRequestDTO pageRequestDTO = PageRequestDTO.builder()
+    .page(2)
+    .size(10)
+    .build();
+
+    PageResponseDTO<TodoDTO> response = todoService.list(pageRequestDTO);
+
+    log.info(response);
+
+  }
+
+
+
+}
+
+
