@@ -1,0 +1,2863 @@
+.eslintrc.cjs
+.gitignore
+index.html
+package-lock.json
+package.json
+postcss.config.js
+public
+README.md
+src
+tailwind.config.js
+tsconfig.json
+tsconfig.node.json
+vite.config.ts
+===========================================================
+\src\apis\memberApi.ts
+===========================================================
+import axios from "axios"
+import { API_SERVER_HOST } from "./todoApi"
+import { Member } from "../interfaces/Member"
+
+const host = `${API_SERVER_HOST}/api/member`
+
+export type TLoginParam = {
+  email:string,
+  pw:string
+}
+
+
+export const loginPost = async (loginParam:TLoginParam): Promise<Member> => {
+
+ const header = {headers: {"Content-Type": "x-www-form-urlencoded"}}
+
+ const form = new FormData()
+ form.append('username', loginParam.email)
+ form.append('password', loginParam.pw)
+
+ const res = await axios.post(`${host}/login`, form, header)
+
+ return res.data
+
+}
+
+
+===========================================================
+\src\apis\productsApi.ts
+===========================================================
+
+import { Product } from "../interfaces/Product";
+import { API_SERVER_HOST } from "./todoApi";
+import { PageParam } from "../interfaces/PageParam";
+import { PageResponse } from "../interfaces/PageResponse";
+//import axios from "axios";
+
+import jwtAxios from "../util/jwtUtil";
+
+const host = `${API_SERVER_HOST}/api/products`
+
+export type AddResultType = {
+  result: number
+}
+
+export type UpdateDeleteResultType = {
+  result: string 
+
+}
+
+export const postAdd = async (product: FormData): Promise<AddResultType> => {
+
+  const res = await jwtAxios.post(`${host}/` , product)
+
+  return res.data
+}
+
+export const getList = async ( pageParam: PageParam ) : Promise<PageResponse<Product>> => {
+
+  const {page,size} = pageParam
+
+  const res = await jwtAxios.get(`${host}/list`, {params: {page:page,size:size }})
+  
+  return res.data
+
+}
+
+export const getOne = async (pno : number) : Promise<Product> => {
+
+  const res = await jwtAxios.get(`${host}/${pno}` )
+
+  return res.data
+
+}
+
+export const putOne = async (pno: number, product:FormData) : Promise<UpdateDeleteResultType>  => {
+
+  const header = {headers: {"Content-Type": "multipart/form-data"}}
+
+  const res = await jwtAxios.put(`${host}/${pno}`, product, header)
+
+  return res.data
+
+}
+
+export const deleteOne = async (pno:number) : Promise<UpdateDeleteResultType>   => {
+
+  const res = await jwtAxios.delete(`${host}/${pno}`)
+
+  return res.data
+
+}
+
+
+
+===========================================================
+\src\apis\todoApi.ts
+===========================================================
+//import axios, { AxiosResponse } from "axios"
+import { Todo, TodoInputType } from "../interfaces/Todo"
+import { PageResponse } from "../interfaces/PageResponse"
+
+import jwtAxios from "../util/jwtUtil"
+
+export const API_SERVER_HOST = 'http://localhost:8080'
+
+export type AddResultType = {
+    TNO: number
+}
+
+export type UpdateDeleteResultType = {
+  result: string 
+
+}
+
+
+
+
+const prefix = `${API_SERVER_HOST}/api/todo`
+
+export const getOne = async (tno:number) : Promise<Todo> => {
+
+  const res = await jwtAxios.get(`${prefix}/${tno}` )
+
+  return res.data
+
+}
+
+export const getList = async ( pageParam: {page:number, size:number} ) : Promise<PageResponse<Todo>>  => {
+
+  const {page,size} = pageParam
+
+  const res = await jwtAxios.get(`${prefix}/list`, {params: {page:page,size:size }})
+  
+  return res.data
+
+}
+
+
+export const postAdd = async (todoObj:TodoInputType): Promise<AddResultType> => {
+
+  const res = await jwtAxios.post(`${prefix}/` , todoObj)
+
+  return res.data
+}
+
+
+export const deleteOne = async (tno:number) : Promise<UpdateDeleteResultType> => {
+
+  const res = await jwtAxios.delete(`${prefix}/${tno}` )
+
+  return res.data
+
+}
+
+export const putOne = async (todo:Todo) : Promise<UpdateDeleteResultType> => {
+
+  const res = await jwtAxios.put(`${prefix}/${todo.tno}`, todo)
+
+  return res.data
+}
+
+
+===========================================================
+\src\App.css
+===========================================================
+#root {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: center;
+}
+
+.logo {
+  height: 6em;
+  padding: 1.5em;
+  will-change: filter;
+  transition: filter 300ms;
+}
+.logo:hover {
+  filter: drop-shadow(0 0 2em #646cffaa);
+}
+.logo.react:hover {
+  filter: drop-shadow(0 0 2em #61dafbaa);
+}
+
+@keyframes logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  a:nth-of-type(2) .logo {
+    animation: logo-spin infinite 20s linear;
+  }
+}
+
+.card {
+  padding: 2em;
+}
+
+.read-the-docs {
+  color: #888;
+}
+
+
+===========================================================
+\src\App.tsx
+===========================================================
+import {RouterProvider} from "react-router-dom";
+import root from "./router/root.tsx";
+
+
+function App() {
+
+  return (
+      <RouterProvider router={root}>
+
+      </RouterProvider>
+  )
+}
+
+export default App
+
+
+===========================================================
+\src\assets\react.svg
+===========================================================
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true" role="img" class="iconify iconify--logos" width="35.93" height="32" preserveAspectRatio="xMidYMid meet" viewBox="0 0 256 228"><path fill="#00D8FF" d="M210.483 73.824a171.49 171.49 0 0 0-8.24-2.597c.465-1.9.893-3.777 1.273-5.621c6.238-30.281 2.16-54.676-11.769-62.708c-13.355-7.7-35.196.329-57.254 19.526a171.23 171.23 0 0 0-6.375 5.848a155.866 155.866 0 0 0-4.241-3.917C100.759 3.829 77.587-4.822 63.673 3.233C50.33 10.957 46.379 33.89 51.995 62.588a170.974 170.974 0 0 0 1.892 8.48c-3.28.932-6.445 1.924-9.474 2.98C17.309 83.498 0 98.307 0 113.668c0 15.865 18.582 31.778 46.812 41.427a145.52 145.52 0 0 0 6.921 2.165a167.467 167.467 0 0 0-2.01 9.138c-5.354 28.2-1.173 50.591 12.134 58.266c13.744 7.926 36.812-.22 59.273-19.855a145.567 145.567 0 0 0 5.342-4.923a168.064 168.064 0 0 0 6.92 6.314c21.758 18.722 43.246 26.282 56.54 18.586c13.731-7.949 18.194-32.003 12.4-61.268a145.016 145.016 0 0 0-1.535-6.842c1.62-.48 3.21-.974 4.76-1.488c29.348-9.723 48.443-25.443 48.443-41.52c0-15.417-17.868-30.326-45.517-39.844Zm-6.365 70.984c-1.4.463-2.836.91-4.3 1.345c-3.24-10.257-7.612-21.163-12.963-32.432c5.106-11 9.31-21.767 12.459-31.957c2.619.758 5.16 1.557 7.61 2.4c23.69 8.156 38.14 20.213 38.14 29.504c0 9.896-15.606 22.743-40.946 31.14Zm-10.514 20.834c2.562 12.94 2.927 24.64 1.23 33.787c-1.524 8.219-4.59 13.698-8.382 15.893c-8.067 4.67-25.32-1.4-43.927-17.412a156.726 156.726 0 0 1-6.437-5.87c7.214-7.889 14.423-17.06 21.459-27.246c12.376-1.098 24.068-2.894 34.671-5.345a134.17 134.17 0 0 1 1.386 6.193ZM87.276 214.515c-7.882 2.783-14.16 2.863-17.955.675c-8.075-4.657-11.432-22.636-6.853-46.752a156.923 156.923 0 0 1 1.869-8.499c10.486 2.32 22.093 3.988 34.498 4.994c7.084 9.967 14.501 19.128 21.976 27.15a134.668 134.668 0 0 1-4.877 4.492c-9.933 8.682-19.886 14.842-28.658 17.94ZM50.35 144.747c-12.483-4.267-22.792-9.812-29.858-15.863c-6.35-5.437-9.555-10.836-9.555-15.216c0-9.322 13.897-21.212 37.076-29.293c2.813-.98 5.757-1.905 8.812-2.773c3.204 10.42 7.406 21.315 12.477 32.332c-5.137 11.18-9.399 22.249-12.634 32.792a134.718 134.718 0 0 1-6.318-1.979Zm12.378-84.26c-4.811-24.587-1.616-43.134 6.425-47.789c8.564-4.958 27.502 2.111 47.463 19.835a144.318 144.318 0 0 1 3.841 3.545c-7.438 7.987-14.787 17.08-21.808 26.988c-12.04 1.116-23.565 2.908-34.161 5.309a160.342 160.342 0 0 1-1.76-7.887Zm110.427 27.268a347.8 347.8 0 0 0-7.785-12.803c8.168 1.033 15.994 2.404 23.343 4.08c-2.206 7.072-4.956 14.465-8.193 22.045a381.151 381.151 0 0 0-7.365-13.322Zm-45.032-43.861c5.044 5.465 10.096 11.566 15.065 18.186a322.04 322.04 0 0 0-30.257-.006c4.974-6.559 10.069-12.652 15.192-18.18ZM82.802 87.83a323.167 323.167 0 0 0-7.227 13.238c-3.184-7.553-5.909-14.98-8.134-22.152c7.304-1.634 15.093-2.97 23.209-3.984a321.524 321.524 0 0 0-7.848 12.897Zm8.081 65.352c-8.385-.936-16.291-2.203-23.593-3.793c2.26-7.3 5.045-14.885 8.298-22.6a321.187 321.187 0 0 0 7.257 13.246c2.594 4.48 5.28 8.868 8.038 13.147Zm37.542 31.03c-5.184-5.592-10.354-11.779-15.403-18.433c4.902.192 9.899.29 14.978.29c5.218 0 10.376-.117 15.453-.343c-4.985 6.774-10.018 12.97-15.028 18.486Zm52.198-57.817c3.422 7.8 6.306 15.345 8.596 22.52c-7.422 1.694-15.436 3.058-23.88 4.071a382.417 382.417 0 0 0 7.859-13.026a347.403 347.403 0 0 0 7.425-13.565Zm-16.898 8.101a358.557 358.557 0 0 1-12.281 19.815a329.4 329.4 0 0 1-23.444.823c-7.967 0-15.716-.248-23.178-.732a310.202 310.202 0 0 1-12.513-19.846h.001a307.41 307.41 0 0 1-10.923-20.627a310.278 310.278 0 0 1 10.89-20.637l-.001.001a307.318 307.318 0 0 1 12.413-19.761c7.613-.576 15.42-.876 23.31-.876H128c7.926 0 15.743.303 23.354.883a329.357 329.357 0 0 1 12.335 19.695a358.489 358.489 0 0 1 11.036 20.54a329.472 329.472 0 0 1-11 20.722Zm22.56-122.124c8.572 4.944 11.906 24.881 6.52 51.026c-.344 1.668-.73 3.367-1.15 5.09c-10.622-2.452-22.155-4.275-34.23-5.408c-7.034-10.017-14.323-19.124-21.64-27.008a160.789 160.789 0 0 1 5.888-5.4c18.9-16.447 36.564-22.941 44.612-18.3ZM128 90.808c12.625 0 22.86 10.235 22.86 22.86s-10.235 22.86-22.86 22.86s-22.86-10.235-22.86-22.86s10.235-22.86 22.86-22.86Z"></path></svg>
+
+
+===========================================================
+\src\components\commons\FetchingModal.tsx
+===========================================================
+
+
+const FetchingModal:React.FC<{}> = (  ) => {
+  
+  return ( 
+    <div 
+    className={`fixed top-0 left-0 z-[1055] flex h-full w-full  place-items-center justify-center bg-black bg-opacity-20`}>
+      <div 
+      className=" bg-white rounded-3xl opacity-100 min-w-min h-1/4  min-w-[600px] flex justify-center items-center ">
+        
+        <div className="text-4xl font-extrabold text-orange-400 m-20">
+          Loading.....
+        </div>
+      </div>
+    </div>  
+   );
+}
+ 
+export default FetchingModal;
+
+
+===========================================================
+\src\components\commons\PageComponent.tsx
+===========================================================
+
+
+import * as React from 'react';
+import { PageResponse } from '../../interfaces/PageResponse';
+import { Todo } from '../../interfaces/Todo';
+
+
+
+interface PageProps<T> {
+
+  serverData: PageResponse<T>
+
+  movePage: Function
+
+}
+
+const PageComponent: React.FC<PageProps<{}>> = ({serverData, movePage}: PageProps<{}>) => {
+
+  return (  
+    <div className="m-6 flex justify-center">
+
+    {serverData.prev ? 
+      <div 
+      className="m-2 p-2 w-16 text-center  font-bold text-blue-400 "
+      onClick={() => movePage({page:serverData.prevPage} )}>
+      Prev </div> : <></>}  
+
+      {serverData.pageNumList.map(pageNum => 
+      <div 
+      key={pageNum}
+      className={ `m-2 p-2 w-12  text-center rounded shadow-md text-white ${serverData.current === pageNum? 'bg-gray-500':'bg-blue-400'}`}
+      onClick={() => movePage( {page:pageNum})}>
+      {pageNum}
+      </div>
+
+      )}
+
+      {serverData.next ? 
+      <div 
+      className="m-2 p-2 w-16 text-center font-bold text-blue-400"
+      onClick={() => movePage( {page:serverData.nextPage})}> 
+      Next 
+      </div> : <></>}  
+
+    </div>   
+
+  );
+
+};
+
+export default PageComponent;
+
+
+===========================================================
+\src\components\commons\ResultModal.tsx
+===========================================================
+
+
+import * as React from 'react';
+
+interface ResultModalProps {
+  title: string,
+  content: string,
+  callbackFn: () => void
+}
+
+const ResultModal: React.FunctionComponent<ResultModalProps> = ({title,content,callbackFn}) => {
+  return ( 
+    <div 
+    className={`fixed top-0 left-0 z-[1055] flex h-full w-full  justify-center bg-black bg-opacity-20`}  
+    onClick={() => {
+      if(callbackFn) {
+        callbackFn()
+      }
+    }}>
+      <div 
+      className="absolute bg-white shadow dark:bg-gray-700 opacity-100 w-1/4 rounded  mt-10 mb-10 px-6 min-w-[600px]">
+        <div className="justify-center bg-warning-400 mt-6 mb-6 text-2xl border-b-4 border-gray-500">
+          {title}
+        </div>
+        <div className="text-4xl  border-orange-400 border-b-4 pt-4 pb-4">
+          {content}
+        </div>
+        <div className="justify-end flex ">
+          <button 
+          className="rounded bg-blue-500 mt-4 mb-4 px-6 pt-4 pb-4 text-lg text-white" 
+          onClick={() => {
+            if(callbackFn) {
+              callbackFn()
+            }
+          }}>Close Modal</button>
+        </div>
+      </div>
+    </div>  
+   );
+}
+ 
+export default ResultModal;
+
+
+===========================================================
+\src\components\member\LoginComponent.tsx
+===========================================================
+import React from 'react';
+import { useDispatch } from 'react-redux';
+import { login, loginPostAsync } from '../../slices/loginSlice';
+import { AppDispatch } from '../../store';
+import { useNavigate } from 'react-router-dom';
+import useCustomLogin, { TCusotmLogin } from '../../hooks/useCustomLogin';
+
+interface LoginCredentials {
+  email: string;
+  pw: string;
+}
+
+const LoginComponent: React.FC = () => {
+
+  const [loginParams, setLoginParams] = React.useState<LoginCredentials>({ email: '', pw: '' });
+
+  const {doLogin, moveToPath}:TCusotmLogin = useCustomLogin()
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.name in loginParams) {
+      loginParams[e.target.name as keyof LoginCredentials] = e.target.value;
+    }
+    setLoginParams({ ...loginParams });
+  }
+
+  const handleClickLogin = () => {
+
+    //dispatch({type:'LoginSlice/login', payload: loginParams})
+
+    doLogin(loginParams)
+    .then(data => {
+      console.log(data)
+      
+      if(data.error) {
+       alert("이메일과 패스워드를 다시 확인하세요")
+      }else {
+       alert("로그인 성공")
+       moveToPath('/')
+      }
+    })
+
+  }
+  
+
+  return (
+    <div className="border-2 border-sky-200 mt-10 m-2 p-4">
+      <div className="flex justify-center">
+        <div className="text-4xl m-4 p-4 font-extrabold text-blue-500">Login Component</div>
+      </div>
+      <div className="flex justify-center">
+        <div className="relative mb-4 flex w-full flex-wrap items-stretch">
+          <div className="w-full p-3 text-left font-bold">Email</div>
+          <input
+            className="w-full p-3 rounded-r border border-solid border-neutral-500 shadow-md"
+            name="email"
+            type={'text'}
+            value={loginParams.email}
+            onChange={handleChange}
+          ></input>
+        </div>
+      </div>
+      <div className="flex justify-center">
+        <div className="relative mb-4 flex w-full flex-wrap items-stretch">
+          <div className="w-full p-3 text-left font-bold">Password</div>
+          <input
+            className="w-full p-3 rounded-r border border-solid border-neutral-500 shadow-md"
+            name="pw"
+            type={'password'}
+            value={loginParams.pw}
+            onChange={handleChange}
+          ></input>
+        </div>
+      </div>
+      <div className="flex justify-center">
+        <div className="relative mb-4 flex w-full justify-center">
+          <div className="w-2/5 p-6 flex justify-center font-bold">
+            <button 
+              className="rounded p-4 w-36 bg-blue-500 text-xl text-white" 
+              onClick={handleClickLogin}>LOGIN</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default LoginComponent;
+
+
+===========================================================
+\src\components\member\LogoutComponent.tsx
+===========================================================
+
+import useCustomLogin, { TCusotmLogin } from "../../hooks/useCustomLogin";
+
+import {  removeCookie} from "../../util/cookieUtil";
+
+const LogoutComponent: React.FC<{}> = () => {
+
+  const {doLogout, moveToPath}:TCusotmLogin = useCustomLogin()
+
+ const handleClickLogout = () => {
+  doLogout()
+  alert("로그아웃되었습니다.")
+  removeCookie("member")
+  moveToPath("/")
+
+ }
+
+ return ( 
+  <div className = "border-2 border-red-200 mt-10 m-2 p-4">
+   <div className="flex justify-center">
+    <div className="text-4xl m-4 p-4 font-extrabold text-red-500">
+     Logout Component
+    </div>
+   </div> 
+   <div className="flex justify-center">
+    <div className="relative mb-4 flex w-full justify-center">
+     <div className="w-2/5 p-6 flex justify-center font-bold">
+      <button 
+       className="rounded p-4 w-36 bg-red-500 text-xl text-white"
+       onClick={handleClickLogout}
+       >
+       LOGOUT
+      </button>
+     </div>
+    </div>
+   </div>
+  </div>
+  );
+}
+
+export default LogoutComponent;
+
+
+===========================================================
+\src\components\menus\BasicMenu.tsx
+===========================================================
+import { useSelector } from "react-redux";
+import { Link } from "react-router-dom";
+import { RootState } from "../../store";
+import { TLoginParam } from "../../apis/memberApi";
+
+
+
+
+const BasicMenu = () => {
+
+    const loginState:TLoginParam = useSelector( (state:RootState)  => state.loginSlice);
+
+    //console.log(loginState)
+
+    return (
+        <nav id='navbar' className=" flex bg-blue-300">
+
+            <div className="w-4/5 bg-gray-500" >
+                <ul className="flex p-4 text-white font-bold">
+                    <li className="pr-6 text-2xl">
+                        <Link to={'/'}>Main</Link>
+                    </li>
+                    <li className="pr-6 text-2xl">
+                        <Link to={'/about'}>About</Link>
+                    </li>
+
+                    {loginState.email ? //로그인한 사용자만 출력되는 메뉴 
+                    
+                    <>
+                    <li className="pr-6 text-2xl">
+                    <Link to={'/todo/'}>Todo</Link>
+                    </li>
+                    <li className="pr-6 text-2xl">
+                    <Link to={'/products/'}>Products</Link>
+                    </li>
+                    </> 
+                    :
+                    <></>
+                    }
+
+
+                </ul>
+            </div>
+
+            <div className="w-1/5 flex justify-end bg-orange-300 p-4 font-medium">
+            { ! loginState.email ?
+            
+            <div className="text-white text-sm m-1 rounded" >
+                <Link to={'/member/login'}>Login</Link>
+            </div>
+            : 
+            
+            <div className="text-white text-sm m-1 rounded" >
+                <Link to={'/member/logout'}>Logout</Link>
+            </div>
+        
+            }
+
+            </div>
+        </nav>
+    );
+}
+
+export default BasicMenu;
+
+
+===========================================================
+\src\components\products\AddComponent.tsx
+===========================================================
+import React from 'react';
+import { AddResultType, postAdd } from '../../apis/productsApi';
+import FetchingModal from '../commons/FetchingModal';
+import ResultModal from '../commons/ResultModal';
+import useCustomMove, { TCustomMove } from '../../hooks/useCustomMove';
+
+interface AddComponentProps {
+  
+  pname: string;
+  pdesc: string;
+  price: number;
+}
+
+
+const AddComponent: React.FC<{}> = () => {
+
+  const [product, setProduct] = React.useState<AddComponentProps>({
+    pname: '',
+    pdesc: '',
+    price: 0
+  });
+
+  const uploadRef = React.useRef<HTMLInputElement>(null);
+
+
+  const [fetching, setFetching] = React.useState<boolean>(false)
+
+  const [result, setResult] = React.useState<AddResultType|null>()
+
+  const {moveToList}:TCustomMove = useCustomMove()
+
+  const handleChangeProduct = (e: React.ChangeEvent<HTMLInputElement|HTMLTextAreaElement>): void => {
+    const { name, value } = e.target;
+    setProduct({
+      ...product,
+      [name]: value
+    });
+  };
+
+
+
+  const handleClickAdd = (): void => {
+    
+    const files = uploadRef.current?.files;
+
+    const formData = new FormData();
+
+    if(files){
+      for(let i = 0; i < files.length; i++){
+        formData.append('files', files[i]);
+      }
+    }
+    formData.append('pname', product.pname);
+    formData.append('pdesc', product.pdesc);  
+    formData.append('price', product.price.toString());
+
+    console.log(formData);
+
+    setFetching(true)
+
+    postAdd(formData).then( data => {
+      setFetching(false)
+      setResult(data)
+    })
+
+  }
+
+  const closeModal = () => { //ResultModal 종료 
+
+    setResult(null)
+    moveToList()
+  }
+
+
+
+  return (
+
+  <div className = "border-2 border-sky-200 mt-10 m-2 p-4"> 
+    {fetching? <FetchingModal/> :<></>}
+
+    {result? 
+        <ResultModal 
+        title={'Product Add Result'}
+        content={`${result.result}번 등록 완료`}
+        callbackFn ={closeModal}
+        />
+        : <></>
+      }
+
+    
+    <div className="flex justify-center">
+      <div className="relative mb-4 flex w-full flex-wrap items-stretch">
+        <div className="w-1/5 p-6 text-right font-bold">Product Name</div>
+        <input className="w-4/5 p-6 rounded-r border border-solid border-neutral-300 shadow-md" 
+          name="pname"
+          type={'text'} 
+          value={product.pname}
+          onChange={handleChangeProduct}
+          >
+          </input>
+
+      </div>
+    </div>
+    <div className="flex justify-center">
+      <div className="relative mb-4 flex w-full flex-wrap items-stretch">
+        <div className="w-1/5 p-6 text-right font-bold">Desc</div>
+          <textarea 
+          className="w-4/5 p-6 rounded-r border border-solid border-neutral-300 shadow-md resize-y"
+          name="pdesc"
+          rows={4}
+          onChange={handleChangeProduct}
+          value={product.pdesc}>
+            {product.pdesc}
+          </textarea>
+        </div>  
+    </div>
+    <div className="flex justify-center">
+      <div className="relative mb-4 flex w-full flex-wrap items-stretch">
+        <div className="w-1/5 p-6 text-right font-bold">Price</div>
+        <input className="w-4/5 p-6 rounded-r border border-solid border-neutral-300 shadow-md" 
+          name="price"
+          type={'number'} 
+          value={product.price}
+          onChange={handleChangeProduct}
+          >
+          </input>
+      </div>
+    </div>
+    <div className="flex justify-center">
+      <div className="relative mb-4 flex w-full flex-wrap items-stretch">
+        <div className="w-1/5 p-6 text-right font-bold">Files</div>
+        <input ref={uploadRef} 
+          className="w-4/5 p-6 rounded-r border border-solid border-neutral-300 shadow-md" 
+          type={'file'} multiple={true}
+        >    
+        </input>
+      </div>
+    </div>
+    <div className="flex justify-end">
+      <div className="relative mb-4 flex p-4 flex-wrap items-stretch">
+        <button type="button" 
+        className="rounded p-4 w-36 bg-blue-500 text-xl  text-white "
+        onClick={handleClickAdd}
+        >
+        ADD
+        </button>
+      
+      </div>
+    </div>
+  </div>
+  );
+};
+
+export default AddComponent;
+
+
+
+
+
+
+===========================================================
+\src\components\products\ListComponent.tsx
+===========================================================
+import React from 'react';
+import useCustomMove, { TCustomMove } from '../../hooks/useCustomMove';
+import { PageResponse } from '../../interfaces/PageResponse';
+import { Product } from '../../interfaces/Product';
+import { getList } from '../../apis/productsApi';
+import FetchingModal from '../commons/FetchingModal';
+import { API_SERVER_HOST } from "../../apis/todoApi";
+import PageComponent from '../commons/PageComponent';
+
+const host = API_SERVER_HOST
+
+
+const ListComponent:  React.FC<Record<string, never>> = ()=> {
+  
+
+  const {page,size,refresh, moveToList, moveToRead, exceptionHandle }:TCustomMove = useCustomMove()
+
+  const [serverData, setServerData] = React.useState<PageResponse<Product>>()
+
+  //for FetchingModal 
+  const [fetching, setFetching] = React.useState(false)
+
+
+
+  React.useEffect(() => {
+
+    setFetching(true)
+
+    getList({page,size}).then( (data: PageResponse<Product>) => {
+      setServerData(data)
+      setFetching(false)
+    }).catch( (error) => {
+      console.log("----------------------EEEEEE")
+      exceptionHandle(error)
+    })
+
+  },[page,size, refresh])
+
+  if(!serverData) {
+    return <></>
+  }
+
+
+  return (
+  <div className="border-2 border-blue-100 mt-10 mr-2 ml-2">
+
+    <h1>Products List Component</h1>
+
+
+    {fetching? <FetchingModal/> :<></>}
+
+    <div className="flex flex-wrap mx-auto p-6">
+
+{serverData.dtoList.map(product =>
+
+<div
+key= {product.pno} 
+className="w-1/2 p-1 rounded shadow-md border-2"
+onClick={() => moveToRead(product.pno)}
+>  
+
+  <div className="flex flex-col  h-full">
+    <div className="font-extrabold text-2xl p-2 w-full ">
+      {product.pno}
+    </div>
+    <div className="text-1xl m-1 p-2 w-full flex flex-col">
+      
+      <div className="w-full overflow-hidden ">
+        <img alt="product"
+        className="m-auto rounded-md w-60" 
+        src={`${host}/api/products/view/s_${product.uploadFileNames?.[0]}`}/>
+      </div>
+
+      <div className="bottom-0 font-extrabold bg-white">
+        <div className="text-center p-1">
+          이름: {product.pname}
+        </div>
+        <div className="text-center p-1">
+          가격: {product.price}
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+)}
+</div>
+
+<PageComponent serverData={serverData} movePage={moveToList}></PageComponent>
+
+</div>
+
+
+  );
+};
+
+export default ListComponent;
+
+
+===========================================================
+\src\components\products\ModifyComponent.tsx
+===========================================================
+import React from 'react';
+import { Product } from '../../interfaces/Product';
+import { deleteOne, getOne, putOne } from '../../apis/productsApi';
+import FetchingModal from '../commons/FetchingModal';
+import { API_SERVER_HOST } from '../../apis/todoApi';
+import useCustomMove, { TCustomMove } from '../../hooks/useCustomMove';
+import { Result } from 'postcss';
+import ResultModal from '../commons/ResultModal';
+
+interface Pno {
+
+  pno:number 
+
+}
+
+const host = API_SERVER_HOST
+
+const ModifyComponent: React.FC<Pno> = ({pno}:Pno) => {
+
+  const [product, setProduct] = React.useState<Product>({
+    pno: 0,
+    pname: '',
+    price: 0,
+    pdesc: '',
+    delFlag: false,
+    uploadFileNames: null
+  })
+
+  const [fetching, setFetching] = React.useState<boolean>(false)
+
+  //이동용 함수
+  const {moveToRead, moveToList}:TCustomMove = useCustomMove()
+
+
+  const [result, setResult] = React.useState<string|null>('')
+
+  const uploadRef = React.useRef<HTMLInputElement>(null);
+
+  React.useEffect(() => {
+
+    setFetching(true) 
+    getOne(pno).then(data =>  {
+      setProduct(data)
+      setFetching(false)
+    })
+
+  },[pno])
+
+  const handleChangeProduct = (e: React.ChangeEvent<HTMLInputElement|HTMLTextAreaElement|HTMLSelectElement>): void => {
+    const { name, value } = e.target;
+    setProduct({
+      ...product,
+      [name]: value
+    });
+  };
+
+  const deleteOldImages = (imageName:string) => {
+
+    const resultFileNames:string[]|undefined = product.uploadFileNames?.filter( fileName => fileName !== imageName)
+
+    if(resultFileNames){
+      product.uploadFileNames = [...resultFileNames]
+    }
+    setProduct({...product})
+  }
+
+  const handleClickModify = () => {
+
+    const files = uploadRef.current?.files
+
+    const formData = new FormData()
+
+    if(files){
+      for (let i = 0; i < files.length; i++) {
+        formData.append("files", files[i]);
+      }
+    }
+    
+    
+    //other data
+    formData.append("pname", product.pname)
+    formData.append("pdesc", product.pdesc)
+    formData.append("price", product.price.toString())
+    formData.append("delFlag", product.delFlag.toString())
+
+    if(product.uploadFileNames){
+      for( let i = 0; i < product.uploadFileNames.length ; i++){
+        formData.append("uploadFileNames", product.uploadFileNames[i])
+      }
+    }
+
+    setFetching(true)
+        
+    putOne(pno, formData).then(data => {
+      setResult('Modified')
+      setFetching(false)
+    })
+  
+  }
+
+  const handleClickDelete = () => {
+
+    setFetching(true)
+    deleteOne(pno).then(data => {
+
+      setResult("Deleted")
+      setFetching(false)
+
+    })
+
+  }
+
+  const closeModal = () => {
+
+    if(result ==='Modified') {
+      moveToRead(pno)
+    }else if(result === 'Deleted') {
+      moveToList({page:1})
+    }
+
+    setResult(null)
+
+  }
+
+
+  
+  return (
+<div className="border-2 border-sky-200 mt-10 m-2 p-4">
+  Product Modify Component
+  {fetching ? <FetchingModal /> : <></>}
+
+  {result? 
+      <ResultModal
+      title={`${result}`}
+      content={'정상적으로 처리되었습니다.'}  //결과 모달창 
+      callbackFn={closeModal}
+      />    
+    :
+    <></>}
+
+
+  <div className="flex justify-center">
+    <div className="relative mb-4 flex w-full flex-wrap items-stretch">
+      <div className="w-1/5 p-6 text-right font-bold">Product Name</div>
+      <input
+        className="w-4/5 p-6 rounded-r border border-solid border-neutral-300 shadow-md"
+        name="pname"
+        type={'text'}
+        value={product.pname}
+        onChange={handleChangeProduct}
+      ></input>
+    </div>
+  </div>
+  <div className="flex justify-center">
+    <div className="relative mb-4 flex w-full flex-wrap items-stretch">
+      <div className="w-1/5 p-6 text-right font-bold">Desc</div>
+      <textarea
+        className="w-4/5 p-6 rounded-r border border-solid border-neutral-300 shadow-md resize-y"
+        name="pdesc"
+        rows={4}
+        onChange={handleChangeProduct}
+        value={product.pdesc}
+      >
+        {product.pdesc}
+      </textarea>
+    </div>
+  </div>
+  <div className="flex justify-center">
+    <div className="relative mb-4 flex w-full flex-wrap items-stretch">
+      <div className="w-1/5 p-6 text-right font-bold">Price</div>
+      <input
+        className="w-4/5 p-6 rounded-r border border-solid border-neutral-300 shadow-md"
+        name="price"
+        type={'number'}
+        value={product.price}
+        onChange={handleChangeProduct}
+      ></input>
+    </div>
+  </div>
+  <div className="flex justify-center">
+    <div className="relative mb-4 flex w-full flex-wrap items-stretch">
+      <div className="w-1/5 p-6 text-right font-bold">DELETE</div>
+      <select
+        name="delFlag"
+        value={product.delFlag.toString()}
+        onChange={handleChangeProduct}
+        className="w-4/5 p-6 rounded-r border border-solid border-neutral-300 shadow-md"
+      >
+        <option value={"false"}>사용</option>
+        <option value={"true"}>삭제</option>
+      </select>
+    </div>
+  </div>
+  <div className="flex justify-center">
+    <div className="relative mb-4 flex w-full flex-wrap items-stretch">
+      <div className="w-1/5 p-6 text-right font-bold">Files</div>
+      <input
+        ref={uploadRef}
+        className="w-4/5 p-6 rounded-r border border-solid border-neutral-300 shadow-md"
+        type={'file'}
+        multiple={true}
+      ></input>
+    </div>
+  </div>
+  <div className="flex justify-center">
+    <div className="relative mb-4 flex w-full flex-wrap items-stretch">
+      <div className="w-1/5 p-6 text-right font-bold">Images</div>
+      <div className="w-4/5 justify-center flex flex-wrap items-start">
+        {product.uploadFileNames?.map((imgFile, i) => (
+          <div
+          className="flex justify-center flex-col w-1/3" 
+          key = {i}>
+          <button className="bg-blue-500 text-3xl text-white"
+          onClick={() => deleteOldImages(imgFile)}
+          >DELETE</button>
+          <img 
+          alt ="img" 
+          src={`${host}/api/products/view/s_${imgFile}`}/>
+          
+        </div>
+
+        ))}
+      </div>
+    </div>
+  </div>
+
+  <div className="flex justify-end p-4">
+      <button type="button" 
+      className="rounded p-4 m-2 text-xl w-32 text-white bg-red-500"
+      onClick={handleClickDelete}
+      >
+        Delete
+      </button>
+
+      <button type="button" 
+      className="inline-block rounded p-4 m-2 text-xl w-32  text-white bg-orange-500"
+      onClick={handleClickModify}
+      >
+        Modify
+      </button>
+      
+      <button type="button" 
+      className="rounded p-4 m-2 text-xl w-32 text-white bg-blue-500"
+      onClick={() => moveToList()}
+      >
+        List
+      </button>
+    </div>
+
+
+</div>
+)
+}
+
+export default ModifyComponent;
+
+
+===========================================================
+\src\components\products\ReadComponent.tsx
+===========================================================
+import React, { useEffect } from 'react';
+import { Product } from '../../interfaces/Product';
+import useCustomMove, { TCustomMove } from '../../hooks/useCustomMove';
+import { getOne } from '../../apis/productsApi';
+import FetchingModal from '../commons/FetchingModal';
+import { API_SERVER_HOST } from '../../apis/todoApi';
+
+interface Pno {
+
+  pno:number 
+
+}
+
+const host = API_SERVER_HOST
+
+const ReadComponent: React.FunctionComponent<Pno> = ({pno}:Pno):JSX.Element => {
+
+  const [product, setProduct] = React.useState<Product>()
+
+  const {moveToList, moveToModify}:TCustomMove = useCustomMove()   
+
+  const [fetching, setFetching] = React.useState(false)
+
+  React.useEffect(() => { 
+    
+    setFetching(true)
+
+    getOne(pno).then( (data:Product) => {
+      console.log(data)
+      setProduct(data)
+      setFetching(false)
+    })
+
+  } ,[pno])
+
+
+  if(!product) {
+    return <></>
+  }
+
+
+  return (
+    <div className="border-2 border-sky-200 mt-10 m-2 p-4">
+      {fetching ? <FetchingModal /> : <></>}
+
+      <div className="flex justify-center mt-10">
+        <div className="relative mb-4 flex w-full flex-wrap items-stretch">
+          <div className="w-1/5 p-6 text-right font-bold">PNO</div>
+          <div className="w-4/5 p-6 rounded-r border border-solid shadow-md">{product.pno}</div>
+        </div>
+      </div>
+
+      <div className="flex justify-center">
+        <div className="relative mb-4 flex w-full flex-wrap items-stretch">
+          <div className="w-1/5 p-6 text-right font-bold">PNAME</div>
+          <div className="w-4/5 p-6 rounded-r border border-solid shadow-md">{product.pname}</div>
+        </div>
+      </div>
+
+      <div className="flex justify-center">
+        <div className="relative mb-4 flex w-full flex-wrap items-stretch">
+          <div className="w-1/5 p-6 text-right font-bold">PRICE</div>
+          <div className="w-4/5 p-6 rounded-r border border-solid shadow-md">{product.price}</div>
+        </div>
+      </div>
+
+      <div className="flex justify-center">
+        <div className="relative mb-4 flex w-full flex-wrap items-stretch">
+          <div className="w-1/5 p-6 text-right font-bold">PDESC</div>
+          <div className="w-4/5 p-6 rounded-r border border-solid shadow-md">{product.pdesc}</div>
+        </div>
+      </div>
+
+      <div className="w-full justify-center flex flex-col m-auto items-center">
+        {product.uploadFileNames?.map((imgFile, i) => (
+          <img alt="product" key={i} className="p-4 w-1/2" src={`${host}/api/products/view/${imgFile}`} />
+        ))}
+      </div>
+
+      <div className="flex justify-end p-4">
+        <button
+          type="button"
+          className="inline-block rounded p-4 m-2 text-xl w-32 text-white bg-red-500"
+          onClick={() => moveToModify(pno)}
+        >
+          Modify
+        </button>
+        <button
+          type="button"
+          className="rounded p-4 m-2 text-xl w-32 text-white bg-blue-500"
+          onClick={() => moveToList()}
+        >
+          List
+        </button>
+      </div>
+    </div>
+  );
+};
+
+export default ReadComponent;
+
+
+===========================================================
+\src\components\todo\AddComponent.tsx
+===========================================================
+import { useState } from "react"
+import { AddResultType,  postAdd } from "../../apis/todoApi";
+import ResultModal from "../commons/ResultModal";
+import useCustomMove, { TCustomMove } from "../../hooks/useCustomMove";
+import { Todo, TodoInputType } from "../../interfaces/Todo";
+
+
+
+
+const AddComponent : React.FC<Record<string, never>> = ()=> {
+
+  const [todo, setTodo] = useState<TodoInputType>({
+    title: '',
+    writer: '',
+    dueDate: ''
+  })
+
+  const [result, setResult] = useState<AddResultType|null>()
+
+  const {moveToList}:TCustomMove = useCustomMove()
+
+  const handleChangeTodo = (e:React.ChangeEvent<HTMLInputElement> ):void => {
+
+    if (e.target.name in todo) {
+      todo[e.target.name as keyof TodoInputType] = e.target.value;
+    } 
+
+    setTodo({ ...todo });
+  }
+
+  const handleClickAdd = () : void => {
+
+    console.log(todo)
+
+    //console.log(todo)
+    postAdd(todo)
+    .then(data => {
+       console.log(data)
+       
+       setResult(data)
+       setTodo({  title: '',    writer: '',    dueDate: ''  })
+
+    }).catch(e => {
+       console.error(e)
+    })
+  }
+
+  const closeModal = (): void => {
+
+    setResult(null)
+    moveToList()
+  }
+
+
+
+  return (
+    <div className = "border-2 border-sky-200 mt-10 m-2 p-4"> 
+
+      {/* 모달 처리 */}
+      {result ? <ResultModal title={'Add Result'} content={`New ${result.TNO} Added`} callbackFn={closeModal}/>: <></>}
+
+      <div className="flex justify-center">
+        <div className="relative mb-4 flex w-full flex-wrap items-stretch">
+          <div className="w-1/5 p-6 text-right font-bold">TITLE</div>
+          <input className="w-4/5 p-6 rounded-r border border-solid border-neutral-500 shadow-md" 
+           name="title"
+           type={'text'} 
+           value={todo.title}
+           onChange={handleChangeTodo}
+           >
+           </input>
+
+        </div>
+      </div>
+      <div className="flex justify-center">
+        <div className="relative mb-4 flex w-full flex-wrap items-stretch">
+          <div className="w-1/5 p-6 text-right font-bold">WRITER</div>
+          <input className="w-4/5 p-6 rounded-r border border-solid border-neutral-500 shadow-md" 
+           name="writer"
+           type={'text'} 
+           value={todo.writer}
+           onChange={handleChangeTodo}
+           >
+           </input>
+        </div>  
+      </div>
+      <div className="flex justify-center">
+        <div className="relative mb-4 flex w-full flex-wrap items-stretch">
+          <div className="w-1/5 p-6 text-right font-bold">DUEDATE</div>
+          <input className="w-4/5 p-6 rounded-r border border-solid border-neutral-500 shadow-md" 
+           name="dueDate"
+           type={'date'} 
+           value={todo.dueDate}
+           onChange={handleChangeTodo}
+           >
+           </input>
+        </div>
+      </div>
+      <div className="flex justify-end">
+        <div className="relative mb-4 flex p-4 flex-wrap items-stretch">
+          <button type="button" 
+          className="rounded p-4 w-36 bg-blue-500 text-xl  text-white "
+          onClick={handleClickAdd}          
+          >
+          ADD
+          </button>
+        </div>
+      </div>
+    </div>
+
+  )
+}
+
+export default AddComponent
+
+
+===========================================================
+\src\components\todo\ListComponent.tsx
+===========================================================
+
+
+import * as React from 'react';
+import useCustomMove, { TCustomMove } from '../../hooks/useCustomMove';
+import { PageResponse } from '../../interfaces/PageResponse';
+import { Todo } from '../../interfaces/Todo';
+import { getList } from '../../apis/todoApi';
+import PageComponent from '../commons/PageComponent';
+
+
+const ListComponent : React.FC<Record<string, never>> = ()=> {
+
+  const {page,size, moveToList, refresh, moveToRead, exceptionHandle}:TCustomMove = useCustomMove()
+
+  const [serverData, setServerData] = React.useState<PageResponse<Todo>>()
+
+  React.useEffect(() => {
+
+
+    getList({page,size}).then( (data: PageResponse<Todo>) => {
+
+      setServerData(data)
+
+    }).catch( (error) => {
+      console.log("----------------------EEEEEE")
+    })
+
+
+
+  },[page,size, refresh])
+
+  if(!serverData) {
+    return <></>
+  }
+
+
+  return (
+  <div className="border-2 border-blue-100 mt-10 mr-2 ml-2">
+
+    <div className="flex flex-wrap mx-auto justify-center p-6">
+
+      {serverData.dtoList.map(todo =>
+
+      <div
+      key= {todo.tno} 
+      className="w-full min-w-[400px]  p-2 m-2 rounded shadow-md"
+      onClick={() => moveToRead(todo.tno)} //이벤트 처리 추가 
+      >  
+
+        <div className="flex ">
+          <div className="font-extrabold text-2xl p-2 w-1/12">
+            {todo.tno}
+          </div>
+          <div className="text-1xl m-1 p-2 w-8/12 font-extrabold">
+            {todo.title}
+          </div>
+          <div className="text-1xl m-1 p-2 w-2/10 font-medium">
+            {todo.dueDate}
+          </div>
+        </div>
+      </div>
+      )}
+    </div>
+
+    <PageComponent serverData={serverData} movePage={moveToList}></PageComponent>
+
+  </div>
+
+  )
+     
+  ;
+};
+
+export default ListComponent;
+
+
+===========================================================
+\src\components\todo\ModifyComponent.tsx
+===========================================================
+import { useEffect, useState } from "react";
+import { Todo } from "../../interfaces/Todo";
+import { UpdateDeleteResultType, deleteOne, getOne, putOne } from "../../apis/todoApi";
+import useCustomMove, { TCustomMove } from "../../hooks/useCustomMove";
+import ResultModal from "../commons/ResultModal";
+
+const initState = {
+  tno:0,
+  title:'',
+  writer: '',
+  dueDate: '',
+  complete: false
+}
+
+interface Tno {
+
+  tno:number 
+
+}
+
+const ModifyComponent = ({tno}:Tno) => {
+
+  const [todo, setTodo] = useState<Todo>({...initState})
+
+  //모달 창을 위한 상태 
+  const [result, setResult] = useState<UpdateDeleteResultType>()
+
+  //이동을 위한 기능들 
+  const {moveToList, moveToRead}: TCustomMove = useCustomMove()
+
+
+
+  useEffect(() => {
+
+    getOne(tno).then(data =>  setTodo(data))
+
+  },[tno])
+
+  const handleChangeTodo = (e:React.ChangeEvent<HTMLInputElement>) => {
+
+    const prop:string = e.target.name
+
+    const value:any = e.target.value
+
+    if (prop === 'title') {
+      todo.title = value
+    }else if(prop === 'dueDate'){
+      todo.dueDate = value
+    }
+    setTodo({...todo})
+  }
+
+  const handleChangeTodoComplete = (e:React.ChangeEvent<HTMLSelectElement>) => {
+
+    const value = e.target.value
+
+    todo.complete = (value === 'Y')
+
+    setTodo({...todo})
+  }
+
+  const handleClickModify = () => { //버튼 클릭시 
+
+    putOne(todo).then(data => {
+      console.log("modify result: " + data)
+      setResult({result:'Modified'})
+    })
+  }
+
+  const handleClickDelete = () => { //버튼 클릭시 
+
+    deleteOne(tno).then( data => {
+      console.log("delete result: " + data)
+      setResult({result:'Deleted'})
+    })
+
+  }
+
+  //모달 창이 close될때 
+  const closeModal = () => {
+
+    if(result?.result ==='Deleted') {
+      moveToList()
+    }else {
+      moveToRead(tno)
+    }
+    
+  }
+  
+
+
+
+  return ( 
+<div className = "border-2 border-sky-200 mt-10 m-2 p-4"> 
+
+{result ? <ResultModal title={'처리결과'} content={result.result} callbackFn={closeModal}></ResultModal>  :<></>}
+
+<div className="flex justify-center mt-10">
+  <div className="relative mb-4 flex w-full flex-wrap items-stretch">
+    <div className="w-1/5 p-6 text-right font-bold">TNO</div>
+    <div className="w-4/5 p-6 rounded-r border border-solid shadow-md bg-gray-100">
+      {todo.tno}        
+    </div>  
+  </div>
+</div>
+<div className="flex justify-center">
+  <div className="relative mb-4 flex w-full flex-wrap items-stretch">
+    <div className="w-1/5 p-6 text-right font-bold">WRITER</div>
+    <div className="w-4/5 p-6 rounded-r border border-solid shadow-md bg-gray-100">
+      {todo.writer}        
+    </div>
+
+  </div>
+</div>
+<div className="flex justify-center">
+  <div className="relative mb-4 flex w-full flex-wrap items-stretch">
+    <div className="w-1/5 p-6 text-right font-bold">TITLE</div>
+    <input className="w-4/5 p-6 rounded-r border border-solid border-neutral-300 shadow-md" 
+     name="title"
+     type={'text'} 
+     value={todo.title}
+     onChange={handleChangeTodo}
+     >
+     </input>
+  </div>  
+</div>
+<div className="flex justify-center">
+  <div className="relative mb-4 flex w-full flex-wrap items-stretch">
+    <div className="w-1/5 p-6 text-right font-bold">DUEDATE</div>
+    <input className="w-4/5 p-6 rounded-r border border-solid border-neutral-300 shadow-md" 
+     name="dueDate"
+     type={'date'} 
+     value={todo.dueDate}
+     onChange={handleChangeTodo}
+     >
+     </input>
+  </div>
+</div>
+<div className="flex justify-center">
+  <div className="relative mb-4 flex w-full flex-wrap items-stretch">
+    <div className="w-1/5 p-6 text-right font-bold">COMPLETE</div>
+    <select
+      name="status" 
+      className="border-solid border-2 rounded m-1 p-2"
+      onChange={handleChangeTodoComplete} 
+      value = {todo.complete? 'Y':'N'} >
+      <option value='Y'>Completed</option>
+      <option value='N'>Not Yet</option>
+    </select>
+  </div>
+</div>
+
+<div className="flex justify-end p-4">
+  <button type="button" 
+    className="inline-block rounded p-4 m-2 text-xl w-32 text-white bg-red-500"
+    onClick={handleClickDelete}
+  >
+    Delete
+  </button>
+  <button type="button" 
+    className="rounded p-4 m-2 text-xl w-32 text-white bg-blue-500"
+    onClick={handleClickModify}
+  >
+    Modify
+  </button>  
+</div>
+</div>
+
+   );
+}
+ 
+export default ModifyComponent;
+
+
+===========================================================
+\src\components\todo\ReadComponent.tsx
+===========================================================
+import * as React from 'react';
+import { getOne } from '../../apis/todoApi';
+
+import {Todo} from '../../interfaces/Todo'
+import useCustomMove,  {TCustomMove} from '../../hooks/useCustomMove';
+
+interface Tno {
+
+    tno:number 
+
+}
+
+const ReadComponent: React.FunctionComponent<Tno> = ({tno}:Tno):JSX.Element => {
+
+
+  const [todo, setTodo] = React.useState<Todo>()
+
+  const {moveToList, moveToModify}: TCustomMove = useCustomMove()
+
+
+  React.useEffect(() => {
+
+    getOne(tno).then( (data:Todo) => {
+      console.log(data)
+      setTodo(data)
+    })
+
+  },[tno])
+  
+  if(!todo) {
+    return <></>
+  }
+
+  return (  
+    <div className = "border-2 border-sky-200 mt-10 m-2 p-4 ">
+        
+      {makeDiv('Tno', todo.tno)}
+      {makeDiv('Writer', todo.writer)}
+      {makeDiv('Title', todo.title)}
+      {makeDiv('Due Date', todo.dueDate)}
+      {makeDiv('Complete', todo.complete ? 'Completed' : 'Not Yet')}
+
+      {/* buttons.........start */}
+      <div className="flex justify-end p-4">
+
+        <button type="button" 
+          className="rounded p-4 m-2 text-xl w-32 text-white bg-blue-500"
+          onClick={() => moveToList()}
+        >
+          List
+        </button>
+
+        <button type="button" 
+        className="rounded p-4 m-2 text-xl w-32 text-white bg-red-500"
+        onClick={() => moveToModify(tno)}
+      >
+        Modify
+      </button>
+
+
+      </div>
+  
+    </div>
+    )
+}
+  
+  const makeDiv = (title:string, value: string |number) : JSX.Element =>       
+  <div className="flex justify-center">
+    <div className="relative mb-4 flex w-full flex-wrap items-stretch">
+      <div className="w-1/5 p-6 text-right font-bold">{title}</div>
+      <div className="w-4/5 p-6 rounded-r border border-solid shadow-md">
+      {value}        
+      </div>
+    </div>
+
+
+
+  </div>
+  
+
+
+export default ReadComponent;
+
+
+===========================================================
+\src\hooks\useCustomLogin.ts
+===========================================================
+
+
+import { useDispatch, useSelector } from "react-redux"
+import { createSearchParams, useNavigate } from "react-router-dom"
+import { loginPostAsync, logout } from "../slices/loginSlice"
+import { AppDispatch, RootState } from "../store"
+import { TLoginParam } from "../apis/memberApi"
+import { Member } from "../interfaces/Member"
+
+
+
+
+
+export interface TCusotmLogin {
+  loginState: Member, 
+  isLogin:boolean, 
+  doLogin: (loginParam:TLoginParam) =>  Promise<any> 
+  doLogout: () => void, 
+  moveToPath: (path:string) => void, 
+  moveToLogin: () => void
+}
+
+
+
+
+
+const useCustomLogin = ( ): TCusotmLogin=> {
+
+ const navigate = useNavigate()
+
+ const dispatch = useDispatch<AppDispatch>()
+
+ const loginState =  useSelector( (state:RootState)  => state.loginSlice);
+
+ const isLogin = loginState.email ? true :false //----------로그인 여부 
+ 
+
+ const doLogin = async (loginParam:TLoginParam) => { //----------로그인 함수 
+
+  const action = await dispatch(loginPostAsync(loginParam))
+
+  return action.payload
+
+ }
+
+ const doLogout = () => { //---------------로그아웃 함수 
+
+  dispatch(logout(null))
+ }
+
+ const moveToPath = (path:string) => { //----------------페이지 이동 
+  navigate({pathname: path}, {replace:true})
+ }
+
+ const moveToLogin = () => { //----------------------로그인 페이지로 이동 
+  navigate({pathname: '/member/login'}, {replace:true})
+ }
+
+
+ return {loginState, isLogin, doLogin, doLogout, moveToPath, moveToLogin}
+
+}
+
+export default useCustomLogin
+
+
+===========================================================
+\src\hooks\useCustomMove.ts
+===========================================================
+import { createSearchParams, useNavigate, useSearchParams } from "react-router-dom"
+import { PageParam } from "../interfaces/PageParam"
+import { useState } from "react"
+
+
+
+export interface TCustomMove {
+
+  moveToList: (param?:PageParam) => void,
+  moveToModify: (num:number) => void,
+  moveToRead: (num:number) => void,
+  page: number,
+  size: number,
+  refresh: boolean,
+   
+  exceptionHandle: (e:any) => void
+
+}
+
+
+
+const getNum  = (param: string | null, defaultValue: number) : number => {
+
+  if(!param){
+    return defaultValue
+  }
+
+  return parseInt(param)
+}
+
+
+
+
+const useCustomMove = () : TCustomMove => {
+
+  const navigate = useNavigate()
+  
+  const [queryParams] = useSearchParams();
+
+  const [refresh, setRefresh] = useState<boolean>(false) //추가 
+
+  const page: number = getNum( queryParams.get('page'), 1)
+
+  const size: number = getNum( queryParams.get('size'), 10)
+
+  const queryDefault = createSearchParams({page: page.toString(), size: size.toString()}).toString() //새로 추가
+
+
+
+  const moveToList = (pageParam?: PageParam):void => {
+
+    let queryStr = ""
+
+    if(pageParam){
+
+      const pageNum = pageParam.page || 1
+      const sizeNum = pageParam.size || 10
+
+      console.log("-----------------")
+      console.log(pageNum, sizeNum)
+
+      queryStr = createSearchParams({page:pageNum.toString(), size: sizeNum.toString()}).toString()
+
+    }else {
+      queryStr = queryDefault
+    }
+
+    setRefresh(!refresh) //추가 
+
+    navigate({pathname: `../list`,search:queryStr})
+  }
+
+  const moveToModify =  (num: number) : void => {
+
+    console.log(queryDefault)
+
+    navigate({
+      pathname: `../modify/${num}`,
+      search: queryDefault  //수정시에 기존의 쿼리 스트링 유지를 위해 
+    })
+  }
+
+  const moveToRead = (num:number) => {
+
+    console.log(queryDefault)
+
+    navigate({
+      pathname: `../read/${num}`,
+      search: queryDefault
+    })
+  }
+
+  const exceptionHandle = (ex:any) => {
+
+    console.log("Exception------------------------")
+  
+    console.log(ex)
+  
+    const errorMsg = ex.response.data.error
+  
+    const errorStr = createSearchParams({error: errorMsg}).toString()
+  
+    if(errorMsg === 'REQUIRE_LOGIN'){
+     alert("로그인 해야만 합니다.")
+     navigate({pathname:'/member/login' , search: errorStr})
+  
+     return
+    }
+  
+    if(ex.response.data.error === 'ERROR_ACCESSDENIED'){
+     alert("해당 메뉴를 사용할 수 있는 권한이 없습니다.")
+     navigate({pathname:'/member/login' , search: errorStr})
+     return 
+    }
+   }
+
+
+  return {moveToList, page, size, moveToModify, refresh, moveToRead, exceptionHandle}
+
+
+
+}
+
+
+export default useCustomMove
+
+
+===========================================================
+\src\index.css
+===========================================================
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+===========================================================
+\src\interfaces\Member.ts
+===========================================================
+
+
+export interface Member {
+  email: string,
+  pw?: string,
+  nickname?:string
+  social?: boolean,
+  roleNames?: [string],
+  accessToken?: string,
+  refreshToken?: string,
+  error?: MemberError
+  
+}
+
+export interface MemberError {
+  error?: string
+}
+
+
+===========================================================
+\src\interfaces\PageParam.ts
+===========================================================
+
+
+export interface PageParam {
+
+  page: number ,
+  size? : number
+
+}
+
+
+===========================================================
+\src\interfaces\PageResponse.ts
+===========================================================
+
+
+export interface PageResponse<T> {
+
+    totalCount: number, 
+    prevPage: number, 
+    nextPage: number, 
+    totalPage: number, 
+    current: number
+
+    prev:boolean
+    next:boolean
+
+    pageNumList:[number]
+
+    dtoList:[T]
+
+}
+
+
+===========================================================
+\src\interfaces\Product.ts
+===========================================================
+export interface Product {
+
+  pno: number,
+  pname: string,
+  price: number,
+  pdesc: string,
+  delFlag: boolean,
+  uploadFileNames? : string[]|null
+
+}
+
+
+===========================================================
+\src\interfaces\Todo.ts
+===========================================================
+export interface Todo {
+
+    tno: number,
+    title: string,
+    writer: string,
+    complete: boolean,
+    dueDate: string
+
+}
+
+export type TodoInputType = Omit<Todo, 'tno'|'complete'>;
+
+
+===========================================================
+\src\layouts\BasicLayout.tsx
+===========================================================
+import {PropsWithChildren} from 'react';
+import BasicMenu from "../components/menus/BasicMenu.tsx";
+
+function BasicLayout({ children }: PropsWithChildren) {
+    return (
+        <>
+
+            {/* 기존 헤더 대신 BasicMenu*/ }
+            <BasicMenu/>
+
+            {/* 상단 여백 my-5 제거 */}
+            <div
+                className="bg-white my-5 w-full flex flex-col space-y-1 md:flex-row md:space-x-1 md:space-y-0">
+
+                <main
+                    className="bg-sky-300 md:w-4/5 lg:w-3/4 px-5 py-5"> {/* 상단 여백 py-40 변경 flex 제거 */}
+                    {children}
+                </main>
+
+                <aside
+                    className="bg-green-300 md:w-1/5 lg:w-1/4 px-5 flex py-5"> {/* 상단 여백 py-40 제거 flex 제거 */}
+
+                    <h1 className="text-2xl md:text-4xl">Sidebar</h1>
+
+                </aside>
+
+            </div>
+        </>
+
+
+    );
+}
+
+export default BasicLayout;
+
+
+===========================================================
+\src\main.tsx
+===========================================================
+import ReactDOM from 'react-dom/client'
+import App from './App.tsx'
+import './index.css'
+import { Provider } from 'react-redux'
+import store from './store.ts'
+
+ReactDOM.createRoot(document.getElementById('root')!).render(
+
+    <Provider store={store}>
+    <App />
+    </Provider>
+  
+)
+
+
+===========================================================
+\src\pages\AboutPage.tsx
+===========================================================
+import { Navigate } from "react-router-dom";
+import useCustomLogin, { TCusotmLogin } from "../hooks/useCustomLogin.ts";
+
+import BasicLayout from "../layouts/BasicLayout.tsx";
+
+function AboutPage() {
+
+    const {isLogin}:TCusotmLogin = useCustomLogin()
+
+    if(!isLogin) {
+        return <Navigate to={'/member/login'}  replace/>    
+    }
+
+    return (
+        <BasicLayout>
+            <div className={'text-3xl'}>About Page</div>
+        </BasicLayout>
+    );
+}
+
+export default AboutPage;
+
+
+===========================================================
+\src\pages\MainPage.tsx
+===========================================================
+
+
+import BasicLayout from "../layouts/BasicLayout.tsx";
+
+function MainPage() {
+    return (
+        <BasicLayout>
+            <div className={'text-3xl'}>Main Page</div>
+        </BasicLayout>
+    );
+}
+
+export default MainPage;
+
+
+===========================================================
+\src\pages\member\LoginPage.tsx
+===========================================================
+import LoginComponent from "../../components/member/LoginComponent";
+import BasicMenu from "../../components/menus/BasicMenu";
+
+const LoginPage: React.FC = () => {
+ return ( 
+  <div className='fixed top-0 left-0 z-[1055] flex flex-col h-full w-full'>
+
+   <BasicMenu/>
+
+   <div className="w-full flex flex-wrap h-full justify-center items-center border-2">
+    <LoginComponent/>
+   </div> 
+  </div>
+ );
+}
+
+export default LoginPage;
+
+
+===========================================================
+\src\pages\member\LogoutPage.tsx
+===========================================================
+import LogoutComponent from "../../components/member/LogoutComponent";
+import BasicMenu from "../../components/menus/BasicMenu";
+
+const LogoutPage: React.FC<{}> = () => {
+ return ( 
+  <div className='fixed top-0 left-0 z-[1055] flex flex-col h-full w-full'>
+
+   <BasicMenu/>
+
+   <div className="w-full flex flex-wrap h-full justify-center items-center border-2">
+    <LogoutComponent></LogoutComponent>
+   </div> 
+  </div>
+  );
+}
+
+export default LogoutPage;
+
+
+===========================================================
+\src\pages\products\AddPage.tsx
+===========================================================
+import React from 'react';
+import AddComponent from '../../components/products/AddComponent';
+
+const AddPage: React.FC = () => {
+  return (
+  <div className="p-4 w-full bg-white">
+    <div className="text-3xl font-extrabold">
+      Products Add Page  
+    </div>
+
+    <AddComponent/> 
+
+  </div>
+
+  );
+};
+
+export default AddPage;
+
+
+===========================================================
+\src\pages\products\IndexPage.tsx
+===========================================================
+import React, { useCallback } from 'react';
+import { Outlet, useNavigate } from 'react-router-dom';
+import BasicLayout from '../../layouts/BasicLayout';
+
+const IndexPage: React.FC = () => {
+
+  const navigate = useNavigate()
+
+  const handleClickList = useCallback((): void => {
+    navigate({ pathname:'list' })
+  },[])
+
+  const handleClickAdd = useCallback((): void => {
+    navigate({ pathname:'add' })
+  },[])
+
+  return ( 
+    <BasicLayout>
+      <div className="text-black font-extrabold -mt-10">
+          Products Menus
+      </div>
+
+      <div className="w-full flex m-2 p-2 ">
+        
+        <div 
+        className="text-xl m-1 p-2  w-20 font-extrabold text-center underline"
+        onClick={handleClickList}>
+          LIST
+        </div>
+        
+        <div 
+        className="text-xl m-1 p-2 w-20 font-extrabold  text-center underline"
+        onClick={handleClickAdd}>
+          ADD
+        </div>
+        
+      </div>
+      <div className="flex flex-wrap w-full ">
+        <Outlet/>
+      </div>
+    </BasicLayout>
+   );
+}
+ 
+export default IndexPage;
+
+
+
+===========================================================
+\src\pages\products\ListPage.tsx
+===========================================================
+
+
+import React from 'react';
+import ListComponent from '../../components/products/ListComponent';
+
+const ListPage: React.FC = () => {
+  return (
+    <div className="p-4 w-full bg-white">
+      <div className="text-3xl font-extrabold">
+        Products List Page  
+      </div>
+
+      <ListComponent/>
+
+    </div>
+  );
+};
+
+export default ListPage;
+
+
+===========================================================
+\src\pages\products\ModifyPage.tsx
+===========================================================
+import React from 'react';
+import { useParams } from 'react-router-dom';
+import ModifyComponent from '../../components/products/ModifyComponent';
+
+const ModifyPage: React.FC = () => {
+
+  
+  const {pno} = useParams<{pno:string}>()
+
+
+  const pnoNumber: number = pno ? parseInt(pno) : 0
+
+  return (
+  <div className="p-4 w-full bg-white">
+    <div className="text-3xl font-extrabold">
+      Products Modify Page  
+    </div>
+
+    <ModifyComponent pno={pnoNumber}/>
+
+  </div>
+
+  );
+};
+
+export default ModifyPage;
+
+
+===========================================================
+\src\pages\products\ReadPage.tsx
+===========================================================
+import * as React from 'react';
+import ReadComponent from '../../components/products/ReadComponent';
+import { useParams } from 'react-router-dom';
+
+const ReadPage: React.FC = () => {
+
+  const {pno} = useParams<{ pno: string }>();
+
+
+  const pnoNumber: number = pno ? parseInt(pno) : 0
+
+  return (
+  <div className="p-4 w-full bg-white">
+    <div className="text-3xl font-extrabold">
+      Products Read Page  
+    </div>
+
+    <ReadComponent pno={pnoNumber}></ReadComponent>
+
+  </div>
+
+  )
+};
+
+export default ReadPage;
+
+
+===========================================================
+\src\pages\todo\AddPage.tsx
+===========================================================
+import { useState } from "react";
+import AddComponent from "../../components/todo/AddComponent";
+import { Todo } from "../../interfaces/Todo";
+
+
+
+
+function AddPage()   {
+
+
+
+
+    return (
+        <div className="p-4 w-full bg-white">
+        <div className="text-3xl font-extrabold">
+          Todo Add Page 
+        </div> 
+    
+        <AddComponent/>
+    
+      </div>
+    
+
+    );
+}
+
+export default AddPage;
+
+
+===========================================================
+\src\pages\todo\IndexPage.tsx
+===========================================================
+import { Outlet, useNavigate} from "react-router-dom";
+import BasicLayout from "../../layouts/BasicLayout";
+
+const IndexPage:React.FC<Record<string, never>> = () => {
+
+    const navigate  = useNavigate()
+
+    const handleClickList = () : void => {
+        navigate({pathname:'list'})
+    }
+    const handleClickAdd = () : void => {
+        navigate({pathname:'add'})
+    }
+
+
+    return (
+        <BasicLayout>
+            <div className="w-full flex m-2 p-2 ">
+                <div
+                    className="text-xl m-1 p-2 w-20 font-extrabold text-center underline"
+                    onClick={handleClickList}
+                >LIST</div>
+                <div
+                    className="text-xl m-1 p-2 w-20 font-extrabold text-center underline"
+                    onClick={handleClickAdd}
+                >ADD</div>
+            </div>
+            <div className="flex flex-wrap w-full">
+                <Outlet/>
+            </div>
+        </BasicLayout>
+    );
+}
+
+export default IndexPage;
+
+
+===========================================================
+\src\pages\todo\ListPage.tsx
+===========================================================
+import ListComponent from "../../components/todo/ListComponent";
+
+const ListPage:React.FC<Record<string, never>> = () => {
+
+    return (
+        <div className="p-4 w-full bg-white">
+        <div className="text-3xl font-extrabold">
+          Todo List Page Component 
+        </div> 
+    
+        <ListComponent/>
+    
+      </div>
+    
+    );
+}
+
+export default ListPage;
+
+
+===========================================================
+\src\pages\todo\ModifyPage.tsx
+===========================================================
+import {  useParams } from "react-router-dom";
+import ModifyComponent from "../../components/todo/ModifyComponent";
+
+
+
+const ModifyPage: React.FC<Record<string, never>> = () => {
+
+    const {tno} = useParams<{tno:string}>()
+
+
+    const tnoNumber: number = tno ? parseInt(tno) : 0
+   
+    return ( 
+    <div className="p-4 w-full bg-white">
+        <div className="text-3xl font-extrabold">
+            Todo Modify Page  
+        </div> 
+
+        <ModifyComponent tno={tnoNumber}/>
+
+    </div>
+
+    );
+}
+   
+
+    
+export default ModifyPage
+
+
+===========================================================
+\src\pages\todo\ReadPage.tsx
+===========================================================
+
+import { useParams } from "react-router-dom";
+import ReadComponent from "../../components/todo/ReadComponent";
+
+
+const ReadPage:React.FC<Record<string, never>> = () => {
+
+    const {tno} = useParams<{ tno: string }>();
+
+
+    const tnoNumber: number = tno ? parseInt(tno) : 0
+    
+   
+    return ( 
+        <div className="font-extrabold w-full bg-white mt-6">
+
+        <div className="text-2xl ">
+        Todo Read Page Component {tno}
+        </div>
+
+        <ReadComponent tno={tnoNumber}></ReadComponent>
+
+        </div> 
+
+    );
+   
+}
+
+export default ReadPage
+
+
+===========================================================
+\src\router\memberRouter.tsx
+===========================================================
+import { ReactElement, Suspense, lazy } from "react";
+
+const Loading = <div>Loading....</div>
+
+const Login = lazy(() => import("../pages/member/LoginPage.tsx"))
+
+const LogoutPage = lazy(() => import("../pages/member/LogoutPage.tsx"))
+
+const memberRouter = ():Array<{path:string, element:ReactElement}> => {
+
+ return [
+  {
+    path:"login",
+    element: <Suspense fallback={Loading}><Login/></Suspense>
+  },
+  {
+    path:"logout",
+    element: <Suspense fallback={Loading}><LogoutPage/></Suspense>
+  }
+ 
+ ]
+
+}
+
+export default memberRouter
+
+
+===========================================================
+\src\router\productRouter.tsx
+===========================================================
+
+import { ReactElement, Suspense, lazy } from 'react';
+import { Navigate } from 'react-router-dom';
+
+const Loading = <div>Loading....</div>
+const ProductsList =  lazy(() => import("../pages/products/ListPage.tsx"))
+
+const ProductsAdd =  lazy(() => import("../pages/products/AddPage.tsx"))
+
+const ProductRead = lazy(() => import("../pages/products/ReadPage.tsx"))
+
+const ProductModify = lazy(() => import("../pages/products/ModifyPage"))
+
+
+const productRouter  = ():Array<{path:string, element:ReactElement}>  => {
+  return [
+    {
+      path: "list",
+      element: <Suspense fallback={Loading}><ProductsList/></Suspense>
+    },
+    {
+      path: "",
+      element: <Navigate replace to="/products/list"/>
+    },
+    {
+      path: "add",
+      element: <Suspense fallback={Loading}><ProductsAdd/></Suspense>
+    }, 
+    {
+      path: "read/:pno",
+      element: <Suspense fallback={Loading}><ProductRead/></Suspense>
+    },
+    {
+      path: "modify/:pno",
+      element: <Suspense fallback={Loading}><ProductModify/></Suspense>
+    }
+
+
+
+  ]
+}
+
+export default productRouter;
+
+
+===========================================================
+\src\router\root.tsx
+===========================================================
+import {createBrowserRouter} from "react-router-dom";
+import {ComponentType, lazy,  ReactNode, Suspense} from "react";
+import todoRouter from "./todoRouter.tsx";
+import productRouter from "./productRouter.tsx";
+import memberRouter from "./memberRouter.tsx";
+
+
+const Loading: ReactNode  = <div>Loading,,,,</div>
+
+const Main:ComponentType = lazy(() => import('../pages/MainPage'))
+
+const About:ComponentType = lazy(() => import('../pages/AboutPage'))
+
+const TodoIndex: ComponentType = lazy(() => import("../pages/todo/IndexPage.tsx"))
+
+const ProductsIndex = lazy(() => import("../pages/products/IndexPage.tsx"))
+
+const root = createBrowserRouter([
+    {
+        path: '',
+        element: <Suspense fallback={Loading}><Main/></Suspense>
+    },
+    {
+        path: 'about',
+        element: <Suspense fallback={Loading}><About/></Suspense>
+    },
+    {
+        path: 'todo',
+        element: <Suspense fallback={Loading}><TodoIndex/></Suspense>,
+        children: todoRouter()
+    },
+    {
+        path: 'products',
+        element: <Suspense fallback={Loading}><ProductsIndex/></Suspense>,
+        children: productRouter()
+    },
+    {
+        path: "member",
+        children: memberRouter()
+    }
+      
+])
+
+export default root
+
+
+
+
+
+===========================================================
+\src\router\todoRouter.tsx
+===========================================================
+
+import {Suspense, lazy, ReactNode, ComponentType, ReactElement} from "react";
+import {Navigate} from "react-router-dom";
+
+const Loading:ReactNode = <div>Loading....</div>
+const TodoList:ComponentType = lazy(() => import("../pages/todo/ListPage"))
+const TodoRead:ComponentType = lazy(() => import("../pages/todo/ReadPage"))
+
+const TodoAdd:ComponentType = lazy(() => import("../pages/todo/AddPage"))
+
+const TodoModify:ComponentType = lazy(() => import("../pages/todo/ModifyPage"))
+
+
+const todoRouter = ():Array<{path:string, element:ReactElement}> => {
+
+    return [
+        {
+            path: "list",
+            element: <Suspense fallback={Loading}><TodoList/></Suspense>
+        },
+        {
+            path: "",
+            element: <Navigate replace to="list"/>
+        },
+        {
+            path: "read/:tno",
+            element: <Suspense fallback={Loading}><TodoRead/></Suspense>
+        },
+        {
+            path: "modify/:tno",
+            element: <Suspense fallback={Loading}><TodoModify/></Suspense>
+        },
+        {
+            path: "add",
+            element: <Suspense fallback={Loading}><TodoAdd/></Suspense>
+        },
+
+    ]
+
+}
+
+export default todoRouter
+
+
+===========================================================
+\src\slices\loginSlice.ts
+===========================================================
+import {  PayloadAction, Slice, createAsyncThunk, createSlice } from "@reduxjs/toolkit";
+import { TLoginParam, loginPost } from "../apis/memberApi";
+
+import { getCookie, setCookie } from "../util/cookieUtil";
+import { Member } from "../interfaces/Member";
+
+
+
+const loadMemberCookie = (): Member => { //쿠키에서 로그인 정보 로딩 
+
+  const memberInfo = getCookie("member")
+ 
+  //닉네임 처리 
+  if(memberInfo && memberInfo.nickname) {
+   memberInfo.nickname = decodeURIComponent(memberInfo.nickname)
+  }
+ 
+  return memberInfo
+ }
+ 
+
+
+export const loginPostAsync = createAsyncThunk('loginPostAsync', (param:TLoginParam) => {
+
+  return loginPost(param)
+ 
+ })
+ 
+
+const loginSlice: Slice = createSlice({
+
+  name: 'LoginSlice',
+  initialState: loadMemberCookie()|| {email:''},
+  reducers: {
+    // login: (state, action:PayloadAction<TLoginParam> ) => {
+    //   console.log("login.....")
+    //   console.log(action)
+
+    //       //{email, pw로 구성 }
+    //   const data = action.payload
+      
+    //   console.log(data)
+      
+    //   return data
+
+    // },
+    logout: ():Member => {
+      console.log("logout....")
+
+      return  {email:''}
+    }
+  },
+  extraReducers: (builder) => {
+    builder.addCase( loginPostAsync.fulfilled, (state,action) => {
+      
+      console.log("fulfilled")
+      //console.log(action)
+
+      const payload = action.payload
+      //정상적인 로그인시에만 저장 
+      if(!payload.error){
+        setCookie("member",JSON.stringify(payload), 1) //1일
+      }
+ 
+      return payload
+    })
+    .addCase(loginPostAsync.pending, (state,action) => {
+      console.log("pending")
+    })
+    .addCase(loginPostAsync.rejected, (state,action) => {
+      console.log("rejected")
+    })
+   }
+  
+})
+
+export const {login,logout} = loginSlice.actions
+
+export default loginSlice.reducer
+
+
+===========================================================
+\src\store.ts
+===========================================================
+import { configureStore } from '@reduxjs/toolkit'
+import loginSlice from './slices/loginSlice'
+
+
+
+const store = configureStore({
+ reducer: {
+    "loginSlice": loginSlice
+  }
+})
+
+
+export type RootState = ReturnType<typeof store.getState>
+
+export type AppDispatch = typeof store.dispatch
+
+export default store
+
+
+===========================================================
+\src\util\cookieUtil.ts
+===========================================================
+import { Cookies } from "react-cookie";
+
+const cookies:Cookies = new Cookies()
+
+export const setCookie = (name:string, value:string, days:number) => {
+
+ const expires = new Date()
+ expires.setUTCDate(expires.getUTCDate() + days ) //보관기한 
+
+ return cookies.set(name, value, {path:'/', expires:expires})
+
+}
+
+export const getCookie = (name:string) => {
+
+ return cookies.get(name)
+}
+
+export const removeCookie = (name:string , path: string ="/") => {
+
+ cookies.remove(name, {path} )
+ 
+}
+
+
+===========================================================
+\src\util\jwtUtil.ts
+===========================================================
+import axios, { AxiosError, AxiosInstance, AxiosResponse, InternalAxiosRequestConfig } from "axios";
+
+import { getCookie, setCookie } from "./cookieUtil";
+import { API_SERVER_HOST } from "../apis/todoApi";
+
+const jwtAxios: AxiosInstance = axios.create()
+
+
+const refreshJWT = async (accessToken:string, refreshToken:string) => {
+
+  const host = API_SERVER_HOST
+ 
+  const header = {headers: {"Authorization":`Bearer ${accessToken}`}}
+ 
+  const res = await axios.get(`${host}/api/member/refresh?refreshToken=${refreshToken}`, header)
+ 
+  //console.log("----------------------")
+  //console.log(res.data)
+ 
+  return res.data 
+ }
+ 
+
+//before request
+const beforeReq = (config: InternalAxiosRequestConfig<any>): InternalAxiosRequestConfig<any>| Promise<any>=> {
+  console.log("before request.............")
+
+  const memberInfo = getCookie("member")
+ 
+  if( !memberInfo ) {
+    console.log("Member NOT FOUND")
+    return Promise.reject(
+    {response:
+      {data:
+        {error:"REQUIRE_LOGIN"}
+      }
+    }
+    )
+    
+  }
+
+  const {accessToken} = memberInfo
+
+  // Authorization 헤더 처리 
+  config.headers.Authorization = `Bearer ${accessToken}`
+
+  return config
+}
+
+
+//fail request
+const requestFail = (err: AxiosError | Error): Promise<AxiosError> => {
+ console.log("request error............")
+
+ return Promise.reject(err)
+}
+
+//before return response
+const beforeRes = async (res: AxiosResponse) : Promise<any>  => {
+ console.log("before return response...........")
+
+ const data = res.data
+
+ if(data && data.error ==='ERROR_ACCESS_TOKEN'){
+
+  const memberCookieValue = getCookie("member")
+
+  const result = await refreshJWT( memberCookieValue.accessToken, memberCookieValue.refreshToken )
+  console.log("refreshJWT RESULT", result)
+
+  memberCookieValue.accessToken = result.accessToken
+  memberCookieValue.refreshToken = result.refreshToken
+
+  setCookie("member", JSON.stringify(memberCookieValue), 1)
+
+  //원래의 호출 
+  const originalRequest = res.config
+
+  originalRequest.headers.Authorization = `Bearer ${result.accessToken}`
+
+  return await axios(originalRequest)
+
+
+ }
+
+
+ return res
+}
+
+//fail response
+const responseFail = (err: AxiosError | Error ) : Promise<Error> => {
+
+ console.log("response fail error.............")
+
+ return Promise.reject(err);
+}
+
+jwtAxios.interceptors.request.use( beforeReq, requestFail )
+
+jwtAxios.interceptors.response.use( beforeRes, responseFail)
+
+export default jwtAxios
+
+
+===========================================================
+\src\vite-env.d.ts
+===========================================================
+/// <reference types="vite/client" />
+
+
